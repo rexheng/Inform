@@ -1,7 +1,49 @@
 'use client';
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, type ReactNode } from 'react';
 import { useChat } from '../hooks/useChat';
 import type { ChatSearchContext } from '../types';
+
+/** Lightweight markdown-to-JSX: handles **bold**, newlines, and numbered/bullet lists */
+function renderMarkdown(text: string): ReactNode {
+  const lines = text.split('\n');
+  const elements: ReactNode[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
+
+    // Blank line → spacer
+    if (!line.trim()) {
+      elements.push(<div key={i} className="h-1.5" />);
+      continue;
+    }
+
+    // Inline bold: **text**
+    const parts: ReactNode[] = [];
+    const regex = /\*\*(.+?)\*\*/g;
+    let last = 0;
+    let match: RegExpExecArray | null;
+    while ((match = regex.exec(line)) !== null) {
+      if (match.index > last) parts.push(line.slice(last, match.index));
+      parts.push(<strong key={`${i}-${match.index}`}>{match[1]}</strong>);
+      last = regex.lastIndex;
+    }
+    if (last < line.length) parts.push(line.slice(last));
+
+    // Numbered list or bullet
+    const listMatch = line.match(/^(\d+)\.\s/);
+    const bulletMatch = line.match(/^[-*]\s/);
+
+    if (listMatch) {
+      elements.push(<div key={i} className="pl-1 flex gap-1.5"><span className="shrink-0 text-cp-text-muted">{listMatch[1]}.</span><span>{parts.slice(parts[0] === listMatch[0] ? 1 : 0)}{parts.length === 0 ? line.replace(/^\d+\.\s/, '') : null}</span></div>);
+    } else if (bulletMatch) {
+      elements.push(<div key={i} className="pl-1 flex gap-1.5"><span className="shrink-0 text-cp-text-muted">&bull;</span><span>{parts}</span></div>);
+    } else {
+      elements.push(<div key={i}>{parts}</div>);
+    }
+  }
+
+  return <>{elements}</>;
+}
 
 interface ChatWidgetProps {
   context?: ChatSearchContext;
@@ -38,7 +80,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[85%] px-3 py-2 rounded-2xl text-[13px] leading-relaxed font-medium ${msg.role === 'user' ? 'bg-cp-dark text-white' : 'bg-cp-bg text-cp-dark'}`}>
-                {msg.content || <span className="typing-dots"><span /><span /><span /></span>}
+                {msg.content ? renderMarkdown(msg.content) : <span className="typing-dots"><span /><span /><span /></span>}
               </div>
             </div>
           ))}
