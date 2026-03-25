@@ -5,9 +5,10 @@ import type { SearchParams } from '../api/client';
 interface Props {
   onSearch: (params: SearchParams) => void;
   loading?: boolean;
+  onGpsLocation?: (coords: { lat: number; lng: number } | null) => void;
 }
 
-export function SearchForm({ onSearch, loading }: Props) {
+export function SearchForm({ onSearch, loading, onGpsLocation }: Props) {
   const { types, loading: typesLoading } = useCancerTypes();
   const [cancerType, setCancerType] = useState('');
   const [postcode, setPostcode] = useState('');
@@ -32,6 +33,7 @@ export function SearchForm({ onSearch, loading }: Props) {
       setGpsActive(false);
       setGpsCoords(null);
       setGpsError(null);
+      onGpsLocation?.(null);
       return;
     }
 
@@ -44,9 +46,11 @@ export function SearchForm({ onSearch, loading }: Props) {
     setGpsError(null);
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        setGpsCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        const coords = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+        setGpsCoords(coords);
         setGpsActive(true);
         setLocating(false);
+        onGpsLocation?.(coords);
       },
       (err) => {
         setGpsError(

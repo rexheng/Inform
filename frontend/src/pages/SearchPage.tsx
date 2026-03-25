@@ -10,6 +10,7 @@ import type { ChatSearchContext } from '../hooks/useChat';
 export function SearchPage() {
   const { data, loading, error, search } = useSearch();
   const [hoveredOds, setHoveredOds] = useState<string | undefined>();
+  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
 
   const chatContext = useMemo<ChatSearchContext | undefined>(() => {
     if (!data) return undefined;
@@ -46,7 +47,7 @@ export function SearchPage() {
 
         {/* Search form */}
         <div className="px-6 pb-6">
-          <SearchForm onSearch={handleSearch} loading={loading} />
+          <SearchForm onSearch={handleSearch} loading={loading} onGpsLocation={setGpsLocation} />
         </div>
 
         {/* Error */}
@@ -100,10 +101,10 @@ export function SearchPage() {
       </div>
 
       {/* Right panel — Map */}
-      <div className="flex-1 bg-gray-100 relative">
+      <div className="flex-1 bg-gray-100 relative isolate">
         <ResultsMap
           results={data?.results || []}
-          userLocation={data?.user_location}
+          userLocation={data?.user_location || gpsLocation || undefined}
           highlightOds={hoveredOds}
         />
         <ChatWidget context={chatContext} />

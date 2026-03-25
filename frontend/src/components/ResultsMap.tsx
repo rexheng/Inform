@@ -22,7 +22,7 @@ function FitBounds({ results, userLocation }: Omit<Props, 'highlightOds'>) {
     if (points.length >= 2) {
       map.fitBounds(points, { padding: [40, 40] });
     } else if (points.length === 1) {
-      map.setView(points[0], 12);
+      map.setView(points[0], 14);
     }
   }, [results, userLocation, map]);
 
@@ -45,7 +45,7 @@ function perfToAvgDays(perf: number | null, std: number): string {
 export function ResultsMap({ results, userLocation, highlightOds }: Props) {
   const center: [number, number] = userLocation
     ? [userLocation.lat, userLocation.lng]
-    : [51.509, -0.118];
+    : [51.5144, -0.1165];
 
   return (
     <MapContainer center={center} zoom={11} className="h-full w-full" zoomControl={false}>
