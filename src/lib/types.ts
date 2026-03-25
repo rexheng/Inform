@@ -1,5 +1,7 @@
 export type Condition = "colorectal" | "breast" | "lung" | "prostate";
 
+export type ReferralType = "urgent" | "two-week-wait" | "routine";
+
 export interface Trust {
   code: string;
   name: string;
@@ -27,6 +29,7 @@ export interface PostcodeResult {
 export interface PatientContext {
   postcode: string;
   condition: Condition;
+  referralType: ReferralType;
   location: PostcodeResult;
   currentTrust: Trust;
   alternatives: TrustWithDistance[];
@@ -47,4 +50,10 @@ export const CONDITIONS: { value: Condition; label: string }[] = [
   { value: "breast", label: "Breast" },
   { value: "lung", label: "Lung" },
   { value: "prostate", label: "Prostate" },
+];
+
+export const REFERRAL_TYPES: { value: ReferralType; label: string }[] = [
+  { value: "two-week-wait", label: "Two Week Wait (suspected cancer)" },
+  { value: "urgent", label: "Urgent referral" },
+  { value: "routine", label: "Routine referral" },
 ];

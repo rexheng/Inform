@@ -1,0 +1,290 @@
+{
+  "R1H": {
+    "name": "Barts Health NHS Trust",
+    "lat": 51.5194,
+    "lng": -0.0584,
+    "borough": "Tower Hamlets",
+    "waits": {
+      "colorectal": 14,
+      "breast": 9,
+      "lung": 17,
+      "prostate": 11
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RQX": {
+    "name": "Homerton Healthcare NHS Foundation Trust",
+    "lat": 51.5526,
+    "lng": -0.0434,
+    "borough": "Hackney",
+    "waits": {
+      "colorectal": 8,
+      "breast": 7,
+      "lung": 10,
+      "prostate": 9
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RJZ": {
+    "name": "King's College Hospital NHS Foundation Trust",
+    "lat": 51.4685,
+    "lng": -0.0935,
+    "borough": "Southwark",
+    "waits": {
+      "colorectal": 10,
+      "breast": 8,
+      "lung": 12,
+      "prostate": 10
+    },
+    "target_met": {
+      "28day": true,
+      "62day": false
+    }
+  },
+  "RJ1": {
+    "name": "Guy's and St Thomas' NHS Foundation Trust",
+    "lat": 51.4986,
+    "lng": -0.1187,
+    "borough": "Lambeth",
+    "waits": {
+      "colorectal": 7,
+      "breast": 6,
+      "lung": 9,
+      "prostate": 8
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RAL": {
+    "name": "Royal Free London NHS Foundation Trust",
+    "lat": 51.5534,
+    "lng": -0.1647,
+    "borough": "Camden",
+    "waits": {
+      "colorectal": 9,
+      "breast": 7,
+      "lung": 11,
+      "prostate": 9
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RRV": {
+    "name": "University College London Hospitals NHS Foundation Trust",
+    "lat": 51.5246,
+    "lng": -0.1340,
+    "borough": "Camden",
+    "waits": {
+      "colorectal": 11,
+      "breast": 8,
+      "lung": 13,
+      "prostate": 10
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RJ2": {
+    "name": "Lewisham and Greenwich NHS Trust",
+    "lat": 51.4720,
+    "lng": 0.0148,
+    "borough": "Lewisham",
+    "waits": {
+      "colorectal": 12,
+      "breast": 10,
+      "lung": 14,
+      "prostate": 12
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RF4": {
+    "name": "Barking, Havering and Redbridge University Hospitals NHS Trust",
+    "lat": 51.5752,
+    "lng": 0.1585,
+    "borough": "Havering",
+    "waits": {
+      "colorectal": 6,
+      "breast": 5,
+      "lung": 8,
+      "prostate": 7
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RQM": {
+    "name": "Chelsea and Westminster Hospital NHS Foundation Trust",
+    "lat": 51.4842,
+    "lng": -0.1813,
+    "borough": "Kensington and Chelsea",
+    "waits": {
+      "colorectal": 8,
+      "breast": 6,
+      "lung": 10,
+      "prostate": 8
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RYJ": {
+    "name": "Imperial College Healthcare NHS Trust",
+    "lat": 51.5149,
+    "lng": -0.1743,
+    "borough": "Westminster",
+    "waits": {
+      "colorectal": 10,
+      "breast": 8,
+      "lung": 12,
+      "prostate": 10
+    },
+    "target_met": {
+      "28day": true,
+      "62day": false
+    }
+  },
+  "RJ6": {
+    "name": "Croydon Health Services NHS Trust",
+    "lat": 51.3869,
+    "lng": -0.1054,
+    "borough": "Croydon",
+    "waits": {
+      "colorectal": 11,
+      "breast": 9,
+      "lung": 13,
+      "prostate": 11
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RAS": {
+    "name": "The Hillingdon Hospitals NHS Foundation Trust",
+    "lat": 51.5330,
+    "lng": -0.4479,
+    "borough": "Hillingdon",
+    "waits": {
+      "colorectal": 13,
+      "breast": 11,
+      "lung": 15,
+      "prostate": 13
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RKE": {
+    "name": "Whittington Health NHS Trust",
+    "lat": 51.5657,
+    "lng": -0.1388,
+    "borough": "Islington",
+    "waits": {
+      "colorectal": 9,
+      "breast": 7,
+      "lung": 11,
+      "prostate": 9
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RJ7": {
+    "name": "St George's University Hospitals NHS Foundation Trust",
+    "lat": 51.4267,
+    "lng": -0.1742,
+    "borough": "Wandsworth",
+    "waits": {
+      "colorectal": 7,
+      "breast": 6,
+      "lung": 9,
+      "prostate": 7
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RVR": {
+    "name": "Epsom and St Helier University Hospitals NHS Trust",
+    "lat": 51.3780,
+    "lng": -0.2107,
+    "borough": "Sutton",
+    "waits": {
+      "colorectal": 12,
+      "breast": 10,
+      "lung": 14,
+      "prostate": 12
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RAX": {
+    "name": "Kingston Hospital NHS Foundation Trust",
+    "lat": 51.4129,
+    "lng": -0.2817,
+    "borough": "Kingston upon Thames",
+    "waits": {
+      "colorectal": 8,
+      "breast": 7,
+      "lung": 10,
+      "prostate": 8
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
+  },
+  "RVL": {
+    "name": "Barnet Hospital (Royal Free Group)",
+    "lat": 51.6498,
+    "lng": -0.2128,
+    "borough": "Barnet",
+    "waits": {
+      "colorectal": 10,
+      "breast": 8,
+      "lung": 12,
+      "prostate": 10
+    },
+    "target_met": {
+      "28day": true,
+      "62day": false
+    }
+  },
+  "RNJ": {
+    "name": "North Middlesex University Hospital NHS Trust",
+    "lat": 51.6132,
+    "lng": -0.0716,
+    "borough": "Enfield",
+    "waits": {
+      "colorectal": 15,
+      "breast": 12,
+      "lung": 16,
+      "prostate": 14
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  }
+}

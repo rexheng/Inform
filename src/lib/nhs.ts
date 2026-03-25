@@ -10,6 +10,12 @@ export function getAllTrusts(): Trust[] {
   }));
 }
 
+export function getTrustByCode(code: string): Trust | undefined {
+  const data = trustsRaw[code];
+  if (!data) return undefined;
+  return { code, ...data };
+}
+
 export function haversineDistanceMiles(
   lat1: number,
   lng1: number,
