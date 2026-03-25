@@ -1,178 +1,187 @@
-# London Cancer Waiting Times: Feasibility & Key Datasets
+# London Cancer Waiting Times: Data Sources & Extraction Guide
 
-## Scope
+## Geographic Scope
 
-A London-focused analytics tool that enables commissioners, researchers, and clinicians to interrogate cancer waiting time performance across London's 5 ICBs and ~20 acute trusts — identifying where delays cluster, why, and what interventions would have the greatest impact.
+London has 5 Integrated Care Boards (ICBs) and approximately 20 acute trusts delivering cancer services. From April 2026, North Central and North West London ICBs merge into West and North London ICB.
 
----
-
-## Why London?
-
-- **5 ICBs** (merging to 4 from April 2026): North Central, North East, North West, South East, South West London
-- **~20 acute trusts** providing cancer services — wide variation in performance
-- **Dense, diverse population** — meaningful health inequalities by borough
-- **Cancer Alliances** already producing local dashboards (e.g. South East London Cancer Alliance) — but no unified London view
-- **Policy tailwind**: National Cancer Plan (Feb 2026) commits to meeting all waiting time standards by March 2029; ICB restructuring creates demand for new data tools
+| ICB | Key acute trusts |
+|---|---|
+| North Central London | UCLH, Royal Free, Whittington, North Mid |
+| North East London | Barts Health, Homerton, Barking/Havering/Redbridge |
+| North West London | Imperial, Chelsea & Westminster, Hillingdon, London North West |
+| South East London | Guy's & St Thomas', King's College, Lewisham & Greenwich |
+| South West London | St George's, Epsom & St Helier, Croydon, Kingston |
 
 ---
 
-## What's Feasible with Open Data Alone
+## Dataset 1: Cancer Waiting Times (CWT)
 
-| Capability | Feasible? | Data source |
-|---|---|---|
-| Monthly CWT performance by London trust | Yes | NHS England CWT provider CSVs |
-| Monthly CWT performance by London ICB | Yes | NHS England CWT commissioner CSVs |
-| Breakdown by cancer type (per trust) | Yes | Provider-based data includes cancer type |
-| Breakdown by pathway stage (FDS, 31-day, 62-day) | Yes | Separate metrics per standard |
-| Time series analysis (2009-present) | Yes | National time series with revisions |
-| Cross-trust benchmarking within London | Yes | Filter provider data to London trusts |
-| Cancer incidence by ICB | Yes | NDRS cancer registration statistics |
-| Screening uptake by GP practice / sub-ICB | Yes | Fingertips Cancer Services profiles |
-| Referral volumes and diagnostic outcomes | Yes | FDS pathway outcome data |
-| Deprivation overlay (IMD by LSOA) | Yes | MHCLG IMD 2019 + ONS lookups |
-| 62-day backlog tracking | Yes | NHS England management information |
-| Demographic breakdown (age, ethnicity) | No | Requires COSD via TRE access |
-| Patient-level pathway analysis | No | Requires COSD/NDRS via TRE |
-| Treatment modality detail | Partial | High-level in CWT; detail in COSD |
-
----
-
-## Key Datasets
-
-### 1. Cancer Waiting Times (CWT) — NHS England Statistics
-
+**Source:** NHS England Statistics
 **URL:** https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
 
-- **What:** Monthly performance against FDS (28-day), 31-day, and 62-day standards
-- **Granularity:** National, ICB, sub-ICB, provider (trust)
-- **Breakdowns:** Cancer type, treatment modality, pathway outcome, route classification
-- **Format:** XLSX workbooks, CSV (25-61MB combined files)
-- **Time span:** October 2009 — present (monthly)
-- **Access:** Fully open, no registration required
-- **London filter:** ~20 provider codes (trust-level), 5 ICB codes (commissioner-level)
-- **Update frequency:** Monthly (provisional → finalised)
+| Field | Detail |
+|---|---|
+| Content | Monthly performance against Faster Diagnosis Standard (28-day), 31-day treatment standard, 62-day treatment standard |
+| Granularity | National, ICB, sub-ICB, provider (trust) |
+| Breakdowns | Cancer type, treatment modality, pathway outcome, route classification |
+| Format | XLSX workbooks; combined CSV files (25-61MB) |
+| Time span | October 2009 — present |
+| Update frequency | Monthly (provisional, then finalised per revisions policy) |
+| Access | Fully open, no registration |
+| London extraction | Filter provider-based CSVs by London trust org codes; filter commissioner-based CSVs by London ICB codes |
+| Key files | Monthly combined CSV (provider), Monthly combined CSV (commissioner), National time series with revisions |
 
-### 2. Fingertips Cancer Services Profiles — OHID
+---
 
+## Dataset 2: Fingertips Cancer Services Profiles
+
+**Source:** Office for Health Improvement and Disparities (OHID)
 **URL:** https://fingertips.phe.org.uk/profile/cancerservices
 
-- **What:** Cancer incidence, screening uptake, urgent referrals, diagnostics
-- **Granularity:** GP practice, PCN, sub-ICB, ICB, national
-- **Format:** CSV download or programmatic access via Fingertips API (R/Python)
-- **Access:** Fully open
-- **London value:** Practice-level screening data exposes within-ICB variation — e.g. which GP clusters under-refer
+| Field | Detail |
+|---|---|
+| Content | Cancer incidence, screening uptake (bowel, breast, cervical), urgent suspected cancer referrals, diagnostics |
+| Granularity | GP practice, Primary Care Network (PCN), sub-ICB, ICB, national |
+| Format | CSV download via web UI; programmatic access via Fingertips API (R package `fingertipsR`, Python package `fingertips_py`) |
+| Access | Fully open |
+| London extraction | Filter by area codes for London ICBs/sub-ICBs; or pull all GP practices within London postcodes |
+| Join key | Organisation code (GP practice code, sub-ICB code, ICB code) |
 
-### 3. Cancer Registration Statistics — NDRS
+---
 
+## Dataset 3: Cancer Registration Statistics
+
+**Source:** National Disease Registration Service (NDRS)
 **URL:** https://digital.nhs.uk/ndrs/data/data-outputs/cancer-data-hub
 
-- **What:** Cancer incidence, prevalence, survival, stage at diagnosis
-- **Granularity:** Cancer Alliance, ICB, Local Authority
-- **Format:** CSV / Excel via Cancer Data Hub
-- **Access:** Open (aggregated); patient-level via NHS Secure Data Environment (TRE)
-- **London value:** Incidence and stage-at-diagnosis data contextualises waiting time performance — high late-stage presentation + poor FDS = systemic pathway failure
+| Field | Detail |
+|---|---|
+| Content | Cancer incidence, prevalence, survival rates, stage at diagnosis |
+| Granularity | Cancer Alliance, ICB, Local Authority |
+| Format | CSV / Excel via Cancer Data Hub |
+| Access | Open for aggregated statistics; patient-level data requires NHS Secure Data Environment (TRE) application |
+| London extraction | Filter by London Cancer Alliance codes or London ICB codes |
+| Join key | ICB code, Cancer Alliance code |
+| Note | Stage-at-diagnosis data is critical context — high late-stage presentation combined with poor FDS performance indicates systemic pathway failure |
 
-### 4. Cancer Outcomes and Services Dataset (COSD) — NDRS
+---
 
+## Dataset 4: Cancer Outcomes and Services Dataset (COSD)
+
+**Source:** NDRS
 **URL:** https://digital.nhs.uk/ndrs/data/data-sets/cosd
 
-- **What:** The national standard for individual-level cancer data — demographics, tumour characteristics, treatment, outcomes
-- **Granularity:** Patient-level
-- **Access:** Restricted — requires application via NHS Secure Data Environment or DATA-CAN
-- **London value:** The gold standard for deep analysis (demographics, treatment pathways, outcomes by ethnicity/deprivation). Not needed for MVP but essential for Phase 2
+| Field | Detail |
+|---|---|
+| Content | Individual-level cancer records — demographics, tumour characteristics, treatment details, outcomes |
+| Granularity | Patient-level |
+| Format | Structured dataset within TRE |
+| Access | Restricted — requires application via NHS Secure Data Environment or DATA-CAN (data-can.org.uk) |
+| London extraction | Filter by treating trust or patient residence (London LSOAs) |
+| Join key | Trust org code, LSOA code |
+| Note | Not available as open data. Provides demographic breakdowns (age, ethnicity, deprivation) and treatment pathway detail unavailable elsewhere |
 
-### 5. Index of Multiple Deprivation (IMD 2019) — MHCLG
+---
 
+## Dataset 5: Index of Multiple Deprivation (IMD 2019)
+
+**Source:** Ministry of Housing, Communities & Local Government (MHCLG)
 **URL:** https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019
 
-- **What:** Deprivation scores and deciles for every LSOA in England
-- **Granularity:** LSOA (Lower Layer Super Output Area)
-- **Format:** CSV / Excel
-- **Access:** Fully open
-- **London value:** Overlay deprivation on cancer performance to expose health inequalities — e.g. do trusts serving more deprived populations have worse 62-day performance?
+| Field | Detail |
+|---|---|
+| Content | Deprivation scores and deciles across 7 domains (income, employment, education, health, crime, housing, living environment) |
+| Granularity | LSOA (Lower Layer Super Output Area) — 4,994 LSOAs in London |
+| Format | CSV / Excel |
+| Access | Fully open |
+| London extraction | Filter by London local authority district codes or London LSOA codes |
+| Join key | LSOA code |
+| Note | Requires ONS LSOA-to-trust or LSOA-to-ICB lookup tables to link deprivation to cancer performance geographies |
 
-### 6. NHS Organisation Data — ODS
+---
 
+## Dataset 6: NHS Organisation Data Service (ODS)
+
+**Source:** NHS England Digital
 **URL:** https://digital.nhs.uk/services/organisation-data-service
 
-- **What:** Lookup tables mapping trust codes to ICBs, Cancer Alliances, regions
-- **Format:** CSV
-- **Access:** Fully open
-- **London value:** Essential for filtering national CWT data down to London providers and mapping organisational relationships
+| Field | Detail |
+|---|---|
+| Content | Lookup tables mapping organisation codes to names, types, hierarchies — trust to ICB, ICB to region, GP practice to PCN/sub-ICB |
+| Format | CSV |
+| Access | Fully open |
+| London extraction | Filter by NHS London region or by the 5 London ICB codes |
+| Join key | Org code (trust code, ICB code, GP practice code) |
+| Note | Essential reference table. All other datasets use org codes as identifiers — ODS provides the human-readable labels and hierarchical relationships |
 
-### 7. NHS Referral to Treatment (RTT) Waiting Times
+---
 
+## Dataset 7: Referral to Treatment (RTT) Waiting Times
+
+**Source:** NHS England Statistics
 **URL:** https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/
 
-- **What:** Consultant-led RTT waiting times by trust and specialty
-- **Granularity:** Provider, treatment function
-- **Access:** Fully open
-- **London value:** Cross-reference general waiting times with cancer-specific data — trusts with high RTT backlogs may have capacity constraints spilling into cancer pathways
-
----
-
-## London ICBs & Key Trusts
-
-| ICB | Key acute trusts (cancer) |
+| Field | Detail |
 |---|---|
-| **North Central London** | UCLH, Royal Free, Whittington, North Mid |
-| **North East London** | Barts Health, Homerton, Barking/Havering/Redbridge |
-| **North West London** | Imperial, Chelsea & Westminster, Hillingdon, London North West |
-| **South East London** | Guy's & St Thomas', King's College, Lewisham & Greenwich |
-| **South West London** | St George's, Epsom & St Helier, Croydon, Kingston |
-
-**Note:** From April 2026, North Central and North West London ICBs merge into **West and North London ICB**. The tool should handle this transition.
+| Content | Consultant-led referral-to-treatment waiting times by trust and treatment function/specialty |
+| Granularity | Provider (trust), treatment function |
+| Format | CSV / Excel |
+| Time span | 2007 — present (monthly) |
+| Access | Fully open |
+| London extraction | Filter by London trust org codes |
+| Join key | Trust org code |
+| Note | General waiting time pressure at a trust often correlates with cancer pathway delays — trusts with high RTT backlogs may have shared capacity constraints affecting diagnostics and theatre access |
 
 ---
 
-## Existing Products & How We Differ
+## How Datasets Connect
 
-| Product | What it does | Gap we fill |
-|---|---|---|
-| **Cancer 360** (NHS FDP) | Patient-level operational tracking within a trust | We do population-level analytics *across* trusts |
-| **AuguR** (Leeds/Yorkshire) | Open-source cancer analytics for Yorkshire | We do London specifically, with national comparison |
-| **Nuffield Trust dashboard** | High-level national performance summary | We drill into pathway stage, cancer type, trust drivers |
-| **Fingertips** | Indicator-level profiles, no narrative | We build interactive exploration with context and comparison |
-| **South East London Cancer Alliance dashboard** | Single alliance view | We unify all 5 London ICBs into one tool |
+```
+ODS (Dataset 6)
+  └── provides org code lookups for all joins below
+
+CWT Provider Data (Dataset 1)
+  ├── join on trust org code → ODS for trust-to-ICB mapping
+  ├── join on trust org code → RTT (Dataset 7) for capacity context
+  └── join on ICB code → Cancer Registration (Dataset 3) for incidence/stage context
+
+CWT Commissioner Data (Dataset 1)
+  └── join on ICB code → Fingertips (Dataset 2) for screening/referral upstream data
+
+Fingertips (Dataset 2)
+  └── join on sub-ICB/ICB code → IMD (Dataset 5) via ONS geography lookups for deprivation overlay
+
+Cancer Registration (Dataset 3)
+  └── join on ICB code → CWT for performance-vs-incidence analysis
+
+IMD (Dataset 5)
+  └── join on LSOA code → ONS LSOA-to-ICB lookup → all ICB-level datasets
+```
+
+---
+
+## Data Availability Summary
+
+| Dataset | Open access | Format | London-filterable | Update cadence |
+|---|---|---|---|---|
+| CWT | Yes | CSV, XLSX | By trust/ICB org code | Monthly |
+| Fingertips | Yes | CSV, API | By ICB/sub-ICB/GP code | Varies by indicator |
+| Cancer Registration | Aggregated: Yes; Patient-level: No | CSV, Excel | By ICB/Cancer Alliance code | Annual |
+| COSD | No (TRE only) | Structured | By trust/LSOA | Monthly submission |
+| IMD 2019 | Yes | CSV, Excel | By LSOA/LA code | Static (2019 release) |
+| ODS | Yes | CSV | By region/ICB | Quarterly |
+| RTT | Yes | CSV, Excel | By trust org code | Monthly |
 
 ---
 
 ## Policy Context
 
-| Policy | Date | Relevance |
+These standards and targets define what the data is measuring against:
+
+| Standard | Target | Current performance (approx.) |
 |---|---|---|
-| **National Cancer Plan** | Feb 2026 | First 10-year strategy since 2015. 75% 5-year survival by 2035. All waiting time standards met by March 2029 |
-| **FDS target increase** | March 2026 | Faster Diagnosis Standard rising from 75% to 80% |
-| **62-day target** | 2025/26 | Operational target of 75% (currently ~70% nationally) |
-| **NHS Reset** | Oct 2025 | 190K more patients treated within 2 months over 3 years |
-| **ICB restructuring** | April 2026 | NCL + NWL merge — creates data continuity challenge and demand for new tools |
-| **CWT system migration** | 2026 | Entire data collection platform moving — window of opportunity |
+| Faster Diagnosis Standard (28-day) | 80% by March 2026 (rising from 75%) | ~77% nationally |
+| 31-day treatment | 96% | ~95% nationally |
+| 62-day referral to treatment | 85% by end of parliament (interim 75% for 2025/26) | ~70% nationally |
 
----
-
-## Proposed MVP (Open Data Only)
-
-**Core features:**
-1. London CWT dashboard — filterable by ICB, trust, cancer type, time period
-2. Pathway stage drilldown — where in the FDS/31-day/62-day pipeline do delays concentrate?
-3. Trust benchmarking — rank London trusts against each other and national median
-4. Trend analysis — 2009-present time series with COVID impact visible
-5. Deprivation overlay — IMD decile correlation with performance metrics
-6. Screening-to-referral pipeline — Fingertips data showing upstream GP-level variation
-
-**Tech:**
-- Static site (Next.js or similar) with pre-processed data
-- Python ETL pipeline pulling monthly CWT CSVs + Fingertips API
-- No backend needed for MVP — all open data, pre-aggregated
-
-**Data refresh:** Monthly, aligned with NHS England publication schedule
-
----
-
-## Phase 2 (Requires Data Access Application)
-
-- COSD patient-level analysis via NHS Secure Data Environment
-- Demographic breakdowns (age, ethnicity, deprivation)
-- Treatment pathway analysis
-- Survival outcome correlation with waiting times
-- Partnership with DATA-CAN for research-grade access
+The National Cancer Plan (February 2026) commits to meeting all cancer waiting time standards by March 2029 and achieving 75% five-year survival by 2035.
