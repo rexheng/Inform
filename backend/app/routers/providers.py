@@ -73,10 +73,14 @@ def get_provider(ods_code: str, db: Session = Depends(get_db)):
 
 @router.get("/cancer-types")
 def list_cancer_types(db: Session = Depends(get_db)):
-    """List all cancer types available in the data."""
+    """List cancer types available for search (FDS referral pathway types)."""
     types = (
         db.query(WaitTime.cancer_type, WaitTime.standard)
-        .filter(WaitTime.cancer_type != "ALL CANCERS")
+        .filter(
+            WaitTime.cancer_type != "ALL CANCERS",
+            WaitTime.cancer_type != "Missing or Invalid",
+            WaitTime.standard == "FDS",
+        )
         .distinct()
         .all()
     )

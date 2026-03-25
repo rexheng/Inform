@@ -1,42 +1,57 @@
 import { Link } from 'react-router-dom';
-import { SearchResult } from '../api/client';
-import { PerformanceBadge } from './PerformanceBadge';
+import type { SearchResult } from '../api/client';
 
 interface Props {
   result: SearchResult;
+  isFirst?: boolean;
 }
 
-export function ResultCard({ result }: Props) {
+function kmToMiles(km: number): string {
+  return (km * 0.621371).toFixed(1);
+}
+
+function perfToAvgDays(performance: number | null, standard: number): string {
+  if (performance === null || performance === undefined || performance === 0) return '—';
+  // Estimate: avg days = standard * (1 - performance) + (standard * 0.5 * performance)
+  // Simplified: if 80% within 62 days, weighted avg ~ 62 * (1 - 0.8*0.5) ≈ 37 days
+  // Better heuristic: days = standard × (2 - performance) / 2
+  const days = Math.round(standard * (2 - performance) / 2);
+  return String(days);
+}
+
+export function ResultCard({ result, isFirst }: Props) {
+  const avgDays = perfToAvgDays(result.performance_fds, 28);
+
   return (
     <Link
       to={`/provider/${result.ods_code}`}
-      className="block bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md hover:border-blue-300 transition"
+      className={`block border-l-[3px] px-5 py-4 hover:bg-gray-50/80 transition-colors ${
+        isFirst ? 'border-l-[#4a8c7f] bg-white' : 'border-l-transparent'
+      }`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 mb-1">
-            <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-blue-100 text-blue-700 text-sm font-bold shrink-0">
-              {result.rank}
-            </span>
-            <h3 className="font-semibold text-gray-900 truncate">{result.name}</h3>
-          </div>
-          <p className="text-sm text-gray-500 ml-9">
-            {result.distance_km} km away
-            {result.total_patients_62d > 0 && (
-              <span> &middot; {result.total_patients_62d} patients (62-day pathway)</span>
-            )}
+          <h3 className="font-semibold text-[15px] text-gray-900 leading-snug">
+            {result.name}
+          </h3>
+          <p className="text-[13px] text-gray-400 mt-0.5">
+            Performance against 28-day standard
           </p>
         </div>
+        <span className="text-[13px] text-gray-400 shrink-0 pt-0.5">
+          {kmToMiles(result.distance_km)} mi
+        </span>
       </div>
 
-      <div className="flex items-center gap-6 mt-4 ml-9">
-        <PerformanceBadge value={result.performance_fds} label="28-Day" />
-        <PerformanceBadge value={result.performance_31d} label="31-Day" />
-        <PerformanceBadge value={result.performance_62d} label="62-Day" />
-        <div className="ml-auto text-right">
-          <div className="text-xs text-gray-500 mb-1">Match Score</div>
-          <span className="text-sm font-mono text-gray-700">{result.score.toFixed(2)}</span>
-        </div>
+      <div className="mt-3 flex items-end gap-2">
+        <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400">
+          Current Avg
+        </span>
+        <span className="flex-1 border-b border-dotted border-gray-200 mb-1" />
+        <span className="text-[28px] font-semibold leading-none text-gray-800">
+          {avgDays}
+        </span>
+        <span className="text-[13px] text-gray-400 mb-0.5">days</span>
       </div>
     </Link>
   );

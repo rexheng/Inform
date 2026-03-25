@@ -13,6 +13,8 @@ export interface SearchResult {
   rank: number;
   ods_code: string;
   name: string;
+  lat: number;
+  lng: number;
   distance_km: number;
   performance_62d: number | null;
   performance_31d: number | null;

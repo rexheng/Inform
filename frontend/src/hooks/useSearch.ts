@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
-import { api, SearchResponse } from '../api/client';
+import { api } from '../api/client';
+import type { SearchResponse } from '../api/client';
 
 export function useSearch() {
   const [data, setData] = useState<SearchResponse | null>(null);

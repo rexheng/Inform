@@ -2,12 +2,12 @@
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from sqlalchemy import func
 
 from app.database import get_db
 from app.models import Provider, WaitTime
 from app.services.geocoding import geocode_postcode
 from app.services.ranking import rank_providers
+from app.services.periods import get_latest_period
 
 router = APIRouter(tags=["search"])
 
@@ -27,7 +27,7 @@ async def search(
         raise HTTPException(status_code=400, detail=f"Invalid postcode: {postcode}")
 
     # Get the latest period in the database
-    latest_period = db.query(func.max(WaitTime.period)).scalar()
+    latest_period = get_latest_period(db)
     if not latest_period:
         raise HTTPException(status_code=503, detail="No data loaded. Run ETL first.")
 
@@ -101,6 +101,8 @@ async def search(
                 "rank": i + 1,
                 "ods_code": r.ods_code,
                 "name": r.name,
+                "lat": r.lat,
+                "lng": r.lng,
                 "distance_km": r.distance_km,
                 "performance_62d": r.performance_62d,
                 "performance_31d": r.performance_31d,

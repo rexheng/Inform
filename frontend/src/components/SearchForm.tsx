@@ -19,16 +19,19 @@ export function SearchForm({ onSearch, loading }: Props) {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full max-w-xl mx-auto space-y-4">
+    <form onSubmit={handleSubmit} className="space-y-6">
       <div>
-        <label htmlFor="cancer-type" className="block text-sm font-medium text-gray-700 mb-1">
-          Cancer Type
+        <label
+          htmlFor="cancer-type"
+          className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-2"
+        >
+          Condition / Pathway
         </label>
         <select
           id="cancer-type"
           value={cancerType}
           onChange={e => setCancerType(e.target.value)}
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+          className="w-full bg-transparent border-b border-gray-300 pb-2 text-gray-900 text-[15px] focus:border-gray-500 focus:outline-none appearance-none cursor-pointer"
           disabled={typesLoading}
         >
           <option value="">Select a cancer type...</option>
@@ -41,25 +44,31 @@ export function SearchForm({ onSearch, loading }: Props) {
       </div>
 
       <div>
-        <label htmlFor="postcode" className="block text-sm font-medium text-gray-700 mb-1">
-          Your Postcode
+        <label
+          htmlFor="postcode"
+          className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-2"
+        >
+          Your Location
         </label>
         <input
           id="postcode"
           type="text"
           value={postcode}
           onChange={e => setPostcode(e.target.value)}
-          placeholder="e.g. SE1 7EH"
-          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 outline-none transition"
+          placeholder="E8 2DS"
+          className="w-full bg-transparent border-b border-gray-300 pb-2 text-gray-900 text-[15px] placeholder-gray-300 focus:border-gray-500 focus:outline-none"
         />
       </div>
 
       <button
         type="submit"
         disabled={loading || !cancerType || !postcode.trim()}
-        className="w-full rounded-lg bg-blue-600 px-6 py-3 text-white font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition"
+        className="w-full rounded-md py-3 text-white text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        style={{ backgroundColor: loading ? '#7fb3a8' : '#4a8c7f' }}
+        onMouseEnter={e => !loading && ((e.target as HTMLElement).style.backgroundColor = '#3d7568')}
+        onMouseLeave={e => !loading && ((e.target as HTMLElement).style.backgroundColor = '#4a8c7f')}
       >
-        {loading ? 'Searching...' : 'Find Nearest Providers'}
+        {loading ? 'Searching...' : 'Update Results'}
       </button>
     </form>
   );

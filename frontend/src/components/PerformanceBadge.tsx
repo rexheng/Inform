@@ -1,28 +1,37 @@
 interface Props {
   value: number | null;
-  label: string;
+  label?: string;
+  size?: 'sm' | 'lg';
 }
 
-export function PerformanceBadge({ value, label }: Props) {
+export function PerformanceBadge({ value, label, size = 'sm' }: Props) {
   if (value === null || value === undefined) {
     return (
       <div className="text-center">
-        <div className="text-xs text-gray-500 mb-1">{label}</div>
-        <div className="text-sm text-gray-400">N/A</div>
+        {label && (
+          <div className="text-[11px] font-semibold tracking-[0.06em] uppercase text-gray-400 mb-1">
+            {label}
+          </div>
+        )}
+        <div className="text-sm text-gray-300">N/A</div>
       </div>
     );
   }
 
   const pct = Math.round(value * 100);
-  let color = 'text-red-600 bg-red-50';
-  if (pct >= 85) color = 'text-green-700 bg-green-50';
-  else if (pct >= 75) color = 'text-yellow-700 bg-yellow-50';
-  else if (pct >= 60) color = 'text-orange-700 bg-orange-50';
+  let color = 'text-red-500';
+  if (pct >= 85) color = 'text-[#4a8c7f]';
+  else if (pct >= 75) color = 'text-amber-600';
+  else if (pct >= 60) color = 'text-orange-500';
 
   return (
     <div className="text-center">
-      <div className="text-xs text-gray-500 mb-1">{label}</div>
-      <span className={`inline-block px-2 py-0.5 rounded text-sm font-semibold ${color}`}>
+      {label && (
+        <div className="text-[11px] font-semibold tracking-[0.06em] uppercase text-gray-400 mb-1">
+          {label}
+        </div>
+      )}
+      <span className={`font-semibold ${color} ${size === 'lg' ? 'text-2xl' : 'text-sm'}`}>
         {pct}%
       </span>
     </div>

@@ -1,91 +1,100 @@
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
 import { SearchForm } from '../components/SearchForm';
 import { ResultCard } from '../components/ResultCard';
+import { ResultsMap } from '../components/ResultsMap';
 import { useSearch } from '../hooks/useSearch';
 
-export function SearchPage() {
-  const navigate = useNavigate();
-  const { data, loading, error, search } = useSearch();
+function kmToMiles(km: number): number {
+  return Math.round(km * 0.621371);
+}
 
-  const handleSearch = (cancerType: string, postcode: string) => {
-    search(cancerType, postcode);
-  };
+export function SearchPage() {
+  const { data, loading, error, search } = useSearch();
+  const [hoveredOds, setHoveredOds] = useState<string | undefined>();
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Hero */}
-      <header className="bg-white border-b border-gray-200">
-        <div className="max-w-3xl mx-auto px-4 py-12 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 mb-3">Inform</h1>
-          <p className="text-lg text-gray-600 max-w-lg mx-auto">
-            Compare NHS cancer waiting times across London hospitals.
-            Find the fastest treatment option near you.
+    <div className="h-screen flex">
+      {/* Left panel */}
+      <div className="w-[420px] shrink-0 border-r border-gray-200 bg-white flex flex-col">
+        {/* Header */}
+        <div className="px-6 pt-8 pb-6">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#4a8c7f]" />
+            <h1 className="text-xl font-bold tracking-tight text-gray-900 uppercase">
+              Inform
+            </h1>
+          </div>
+          <h2 className="text-[22px] text-gray-500 font-light leading-snug">
+            Find care faster.
+          </h2>
+          <p className="text-[13px] text-gray-400 mt-1.5 leading-relaxed">
+            Compare NHS wait times and distances instantly based on public data.
           </p>
         </div>
-      </header>
 
-      {/* Search */}
-      <main className="max-w-3xl mx-auto px-4 py-8">
-        <SearchForm onSearch={handleSearch} loading={loading} />
+        {/* Search form */}
+        <div className="px-6 pb-6">
+          <SearchForm onSearch={search} loading={loading} />
+        </div>
 
+        {/* Error */}
         {error && (
-          <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+          <div className="mx-6 mb-4 px-4 py-3 bg-red-50 border border-red-100 rounded text-red-600 text-[13px]">
             {error}
           </div>
         )}
 
+        {/* Results header */}
         {data && (
-          <div className="mt-8">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-semibold text-gray-900">
-                {data.results.length} providers found
-              </h2>
-              <span className="text-sm text-gray-500">
-                Data: {data.period}
-              </span>
-            </div>
-
-            {data.results.length === 0 ? (
-              <p className="text-gray-500 text-center py-8">
-                No providers found for this cancer type. Try a different search.
-              </p>
-            ) : (
-              <div className="space-y-3">
-                {data.results.map(result => (
-                  <ResultCard key={result.ods_code} result={result} />
-                ))}
-              </div>
-            )}
+          <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
+            <span className="text-[13px] text-gray-400">
+              Showing {data.results.length} trusts within 15 miles
+            </span>
+            <span className="text-[13px] text-gray-500 font-medium">
+              Wait Time &#8595;
+            </span>
           </div>
         )}
 
-        {/* Info section */}
-        {!data && !loading && (
-          <div className="mt-12 grid gap-6 md:grid-cols-3">
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="text-2xl mb-2">&#x1F4CA;</div>
-              <h3 className="font-semibold text-gray-900 mb-1">Real NHS Data</h3>
-              <p className="text-sm text-gray-600">
-                Based on official NHS England Cancer Waiting Times statistics, updated monthly.
-              </p>
+        {/* Results list */}
+        <div className="flex-1 overflow-y-auto border-t border-gray-100">
+          {data && data.results.length > 0 ? (
+            <div className="divide-y divide-gray-100">
+              {data.results.map((result, i) => (
+                <div
+                  key={result.ods_code}
+                  onMouseEnter={() => setHoveredOds(result.ods_code)}
+                  onMouseLeave={() => setHoveredOds(undefined)}
+                >
+                  <ResultCard result={result} isFirst={i === 0} />
+                </div>
+              ))}
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="text-2xl mb-2">&#x1F4CD;</div>
-              <h3 className="font-semibold text-gray-900 mb-1">Distance-Aware</h3>
-              <p className="text-sm text-gray-600">
-                Results ranked by a combination of wait time performance and distance from your postcode.
-              </p>
+          ) : data ? (
+            <div className="px-6 py-12 text-center text-gray-400 text-sm">
+              No providers found for this cancer type.
             </div>
-            <div className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="text-2xl mb-2">&#x1F3E5;</div>
-              <h3 className="font-semibold text-gray-900 mb-1">23 London Trusts</h3>
-              <p className="text-sm text-gray-600">
-                Covering all NHS cancer treatment providers across Greater London.
-              </p>
+          ) : !loading ? (
+            <div className="px-6 py-12 text-center text-gray-300 text-sm">
+              Search to see results
             </div>
-          </div>
-        )}
-      </main>
+          ) : null}
+        </div>
+
+        {/* Footer */}
+        <div className="px-6 py-3 border-t border-gray-100 text-[11px] text-gray-300">
+          Data: NHS England Cancer Waiting Times {data?.period || ''}
+        </div>
+      </div>
+
+      {/* Right panel — Map */}
+      <div className="flex-1 bg-gray-100 relative">
+        <ResultsMap
+          results={data?.results || []}
+          userLocation={data?.user_location}
+          highlightOds={hoveredOds}
+        />
+      </div>
     </div>
   );
 }

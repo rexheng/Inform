@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api, CancerType } from '../api/client';
+import { api } from '../api/client';
+import type { CancerType } from '../api/client';
 
 export function useCancerTypes() {
   const [types, setTypes] = useState<CancerType[]>([]);

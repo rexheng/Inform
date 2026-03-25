@@ -6,6 +6,7 @@ from sqlalchemy import func
 
 from app.database import get_db
 from app.models import Provider, WaitTime
+from app.services.periods import get_latest_period
 
 router = APIRouter(tags=["stats"])
 
@@ -13,7 +14,7 @@ router = APIRouter(tags=["stats"])
 @router.get("/stats/summary")
 def summary_stats(db: Session = Depends(get_db)):
     """Aggregate statistics across all London providers."""
-    latest_period = db.query(func.max(WaitTime.period)).scalar()
+    latest_period = get_latest_period(db)
     if not latest_period:
         return {"error": "No data loaded"}
 

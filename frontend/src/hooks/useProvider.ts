@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { api, ProviderDetail } from '../api/client';
+import { api } from '../api/client';
+import type { ProviderDetail } from '../api/client';
 
 export function useProvider(odsCode: string | undefined) {
   const [provider, setProvider] = useState<ProviderDetail | null>(null);

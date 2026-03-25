@@ -9,6 +9,8 @@ from app.services.geocoding import haversine_km
 class RankedProvider:
     ods_code: str
     name: str
+    lat: float
+    lng: float
     distance_km: float
     performance_62d: float | None
     performance_31d: float | None
@@ -66,6 +68,8 @@ def rank_providers(
         results.append(RankedProvider(
             ods_code=item["ods_code"],
             name=item["name"],
+            lat=item["lat"],
+            lng=item["lng"],
             distance_km=round(dist_val, 1),
             performance_62d=item.get("performance_62d"),
             performance_31d=item.get("performance_31d"),
