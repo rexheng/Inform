@@ -44,18 +44,18 @@ export function ChatWidget({ context }: ChatWidgetProps) {
     <>
       {/* Chat panel */}
       <div
-        className={`absolute bottom-20 right-4 z-[1000] w-[360px] bg-white rounded-xl shadow-xl border border-gray-200 flex flex-col chat-panel ${open ? 'chat-panel-open' : 'chat-panel-closed'}`}
+        className={`absolute bottom-20 right-4 z-[1000] w-[360px] bg-cp-surface rounded-[20px] shadow-xl border-[1.5px] border-cp-border flex flex-col chat-panel ${open ? 'chat-panel-open' : 'chat-panel-closed'}`}
         style={{ height: open ? 460 : 0, opacity: open ? 1 : 0, pointerEvents: open ? 'auto' : 'none' }}
       >
         {/* Header */}
-        <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100 shrink-0">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-cp-border shrink-0">
           <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#4a8c7f]" />
-            <span className="text-sm font-semibold text-gray-800">Inform Assistant</span>
+            <span className="px-2 py-0.5 rounded-full bg-cp-lime text-cp-dark text-[0.7rem] font-bold">CP</span>
+            <span className="text-sm font-bold text-cp-dark">ClearPath Assistant</span>
           </div>
           <button
             onClick={() => setOpen(false)}
-            className="text-gray-400 hover:text-gray-600 transition-colors p-1"
+            className="text-cp-text-muted hover:text-cp-dark transition-colors p-1"
             aria-label="Close chat"
           >
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
@@ -67,17 +67,17 @@ export function ChatWidget({ context }: ChatWidgetProps) {
         {/* Messages */}
         <div className="flex-1 overflow-y-auto px-4 py-3 space-y-3">
           {messages.length === 0 && (
-            <div className="text-center text-gray-400 text-xs mt-8 px-4">
+            <div className="text-center text-cp-text-muted text-xs mt-8 px-4">
               Ask about NHS cancer wait times, what the numbers mean, or which hospital might be best for you.
             </div>
           )}
           {messages.map((msg, i) => (
             <div key={i} className={`flex ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
               <div
-                className={`max-w-[85%] px-3 py-2 rounded-lg text-[13px] leading-relaxed ${
+                className={`max-w-[85%] px-3 py-2 rounded-2xl text-[13px] leading-relaxed font-medium ${
                   msg.role === 'user'
-                    ? 'bg-[#4a8c7f] text-white'
-                    : 'bg-gray-100 text-gray-700'
+                    ? 'bg-cp-dark text-white'
+                    : 'bg-cp-bg text-cp-dark'
                 }`}
               >
                 {msg.content || (
@@ -90,7 +90,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
           ))}
           {error && (
             <div className="flex justify-start">
-              <div className="max-w-[85%] px-3 py-2 rounded-lg text-[13px] bg-red-50 text-red-600 border border-red-100">
+              <div className="max-w-[85%] px-3 py-2 rounded-2xl text-[13px] bg-red-50 text-red-600 border border-red-100">
                 {error}
                 <button
                   onClick={clearError}
@@ -105,7 +105,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
         </div>
 
         {/* Input */}
-        <div className="px-3 py-3 border-t border-gray-100 shrink-0">
+        <div className="px-3 py-3 border-t border-cp-border shrink-0">
           <div className="flex items-center gap-2">
             <input
               ref={inputRef}
@@ -114,13 +114,13 @@ export function ChatWidget({ context }: ChatWidgetProps) {
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={handleKeyDown}
               placeholder="Ask about wait times..."
-              className="flex-1 text-[13px] px-3 py-2 rounded-lg border border-gray-200 focus:outline-none focus:border-[#4a8c7f] focus:ring-1 focus:ring-[#4a8c7f]/20 transition-colors"
+              className="flex-1 text-[13px] px-4 py-2.5 rounded-2xl border-[1.5px] border-cp-border focus:outline-none focus:border-cp-dark transition-colors"
               disabled={streaming}
             />
             <button
               onClick={handleSend}
               disabled={!input.trim() || streaming}
-              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-[#4a8c7f] text-white hover:bg-[#3d7568] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-cp-dark text-white hover:opacity-90 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               aria-label="Send message"
             >
               <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
@@ -134,7 +134,7 @@ export function ChatWidget({ context }: ChatWidgetProps) {
       {/* Toggle button */}
       <button
         onClick={() => setOpen((v) => !v)}
-        className={`absolute bottom-4 right-4 z-[1000] w-12 h-12 rounded-full bg-[#4a8c7f] text-white shadow-lg hover:bg-[#3d7568] transition-all flex items-center justify-center ${!hasBeenOpened ? 'chat-bubble-pulse' : ''}`}
+        className={`absolute bottom-4 right-4 z-[1000] w-12 h-12 rounded-full bg-cp-dark text-white shadow-lg hover:opacity-90 transition-all flex items-center justify-center ${!hasBeenOpened ? 'chat-bubble-pulse' : ''}`}
         aria-label={open ? 'Close chat' : 'Open chat'}
       >
         {open ? (

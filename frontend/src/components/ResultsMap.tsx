@@ -30,11 +30,11 @@ function FitBounds({ results, userLocation }: Omit<Props, 'highlightOds'>) {
 }
 
 function getMarkerColor(perf: number | null): string {
-  if (perf === null || perf === undefined) return '#9ca3af';
-  if (perf >= 0.85) return '#4a8c7f';
-  if (perf >= 0.75) return '#6b7f99';
-  if (perf >= 0.60) return '#9b8b6f';
-  return '#8b5555';
+  if (perf === null || perf === undefined) return '#537566'; // cp-text-muted
+  if (perf >= 0.85) return '#0A3B2A'; // cp-dark — good
+  if (perf >= 0.75) return '#A3E4D1'; // cp-mint — acceptable
+  if (perf >= 0.60) return '#D0A4FF'; // cp-purple — delays
+  return '#ef4444'; // red — significant delays
 }
 
 function perfToAvgDays(perf: number | null, std: number): string {
@@ -60,9 +60,9 @@ export function ResultsMap({ results, userLocation, highlightOds }: Props) {
           center={[userLocation.lat, userLocation.lng]}
           radius={8}
           pathOptions={{
-            fillColor: '#1f2937',
+            fillColor: '#0A3B2A',
             fillOpacity: 1,
-            color: '#fff',
+            color: '#D9FA58',
             weight: 2,
           }}
         >
@@ -79,14 +79,14 @@ export function ResultsMap({ results, userLocation, highlightOds }: Props) {
           pathOptions={{
             fillColor: getMarkerColor(r.performance_fds),
             fillOpacity: r.ods_code === highlightOds ? 1 : 0.7,
-            color: r.ods_code === highlightOds ? '#1f2937' : '#fff',
+            color: r.ods_code === highlightOds ? '#0A3B2A' : '#FFFFFF',
             weight: r.ods_code === highlightOds ? 2 : 1,
           }}
         >
           <Popup>
             <div>
-              <div className="font-semibold text-gray-900">{r.name}</div>
-              <div className="text-gray-500 mt-1">
+              <div className="font-semibold text-cp-dark">{r.name}</div>
+              <div className="text-cp-text-muted mt-1">
                 {perfToAvgDays(r.performance_fds, 28)} days avg wait
               </div>
             </div>

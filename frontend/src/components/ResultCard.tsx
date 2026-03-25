@@ -16,9 +16,9 @@ function perfToAvgDays(performance: number | null, standard: number): string {
 }
 
 function perfLabel(perf: number | null): { text: string; color: string } {
-  if (perf === null || perf === undefined) return { text: 'No data', color: 'text-gray-400' };
+  if (perf === null || perf === undefined) return { text: 'No data', color: 'text-cp-text-muted' };
   const pct = Math.round(perf * 100);
-  if (pct >= 85) return { text: 'Good', color: 'text-[#4a8c7f]' };
+  if (pct >= 85) return { text: 'Good', color: 'text-cp-dark' };
   if (pct >= 75) return { text: 'OK', color: 'text-amber-600' };
   if (pct >= 60) return { text: 'Longer waits', color: 'text-orange-500' };
   return { text: 'Long waits', color: 'text-red-500' };
@@ -34,22 +34,22 @@ export function ResultCard({ result, isFirst }: Props) {
 
   return (
     <div
-      className={`border-l-[3px] px-5 py-4 transition-colors ${
-        isFirst ? 'border-l-[#4a8c7f] bg-white' : 'border-l-transparent hover:bg-gray-50/80'
+      className={`border-l-[3px] px-5 py-4 transition-all duration-100 ${
+        isFirst ? 'border-l-cp-dark bg-cp-surface' : 'border-l-transparent hover:bg-cp-bg'
       }`}
     >
       {/* Header row */}
       <div className="flex items-start justify-between gap-3">
         <Link to={`/provider/${result.ods_code}`} className="flex-1 min-w-0 group">
-          <h3 className="font-semibold text-[15px] text-gray-900 leading-snug group-hover:text-[#4a8c7f] transition-colors">
+          <h3 className="font-semibold text-[15px] text-cp-dark leading-snug group-hover:opacity-70 transition-colors">
             {result.name}
           </h3>
-          <p className="text-[13px] text-gray-400 mt-0.5">
+          <p className="text-[13px] text-cp-text-muted mt-0.5 font-medium">
             {kmToMiles(result.distance_km)} miles away
           </p>
         </Link>
         {isFirst && (
-          <span className="shrink-0 text-[11px] font-semibold uppercase tracking-wider bg-[#4a8c7f]/10 text-[#4a8c7f] px-2 py-0.5 rounded">
+          <span className="shrink-0 text-[0.7rem] font-bold uppercase tracking-[0.05em] bg-cp-lime text-cp-dark px-2.5 py-1 rounded-full">
             Best match
           </span>
         )}
@@ -57,19 +57,19 @@ export function ResultCard({ result, isFirst }: Props) {
 
       {/* Wait time display */}
       <div className="mt-3 flex items-end gap-2">
-        <span className="text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400">
+        <span className="text-[0.7rem] font-semibold tracking-[0.05em] uppercase text-cp-dark opacity-70">
           Avg wait to diagnosis
         </span>
-        <span className="flex-1 border-b border-dotted border-gray-200 mb-1" />
-        <span className="text-[28px] font-semibold leading-none text-gray-800">
+        <span className="flex-1 border-b border-dotted border-cp-border mb-1" />
+        <span className="text-[28px] font-extrabold leading-none text-cp-dark tracking-[-0.03em]">
           {avgDays}
         </span>
-        <span className="text-[13px] text-gray-400 mb-0.5">days</span>
+        <span className="text-[13px] text-cp-text-muted mb-0.5 font-medium">days</span>
       </div>
 
       {/* Rating + Actions */}
       <div className="mt-3 flex items-center justify-between">
-        <span className={`text-[13px] font-medium ${rating.color}`}>
+        <span className={`text-[13px] font-semibold ${rating.color}`}>
           {rating.text}
         </span>
         <div className="flex items-center gap-3">
@@ -77,17 +77,17 @@ export function ResultCard({ result, isFirst }: Props) {
             href={directionsUrl(result.lat, result.lng)}
             target="_blank"
             rel="noopener noreferrer"
-            className="text-[12px] text-[#4a8c7f] font-medium hover:underline flex items-center gap-1"
+            className="text-[12px] text-cp-dark font-semibold hover:opacity-70 flex items-center gap-1"
             onClick={e => e.stopPropagation()}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <polygon points="3 11 22 2 13 21 11 13 3 11" />
             </svg>
             Directions
           </a>
           <Link
             to={`/provider/${result.ods_code}`}
-            className="text-[12px] text-gray-400 font-medium hover:text-gray-600"
+            className="text-[12px] text-cp-text-muted font-medium hover:text-cp-dark"
           >
             Details &rarr;
           </Link>
