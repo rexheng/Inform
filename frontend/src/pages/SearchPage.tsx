@@ -3,10 +3,15 @@ import { SearchForm } from '../components/SearchForm';
 import { ResultCard } from '../components/ResultCard';
 import { ResultsMap } from '../components/ResultsMap';
 import { useSearch } from '../hooks/useSearch';
+import type { SearchParams } from '../api/client';
 
 export function SearchPage() {
   const { data, loading, error, search } = useSearch();
   const [hoveredOds, setHoveredOds] = useState<string | undefined>();
+
+  const handleSearch = (params: SearchParams) => {
+    search(params);
+  };
 
   return (
     <div className="h-screen flex">
@@ -24,13 +29,13 @@ export function SearchPage() {
             Find care faster.
           </h2>
           <p className="text-[13px] text-gray-400 mt-1.5 leading-relaxed">
-            Compare NHS wait times and distances instantly based on public data.
+            Compare NHS cancer wait times and distances instantly based on public data.
           </p>
         </div>
 
         {/* Search form */}
         <div className="px-6 pb-6">
-          <SearchForm onSearch={search} loading={loading} />
+          <SearchForm onSearch={handleSearch} loading={loading} />
         </div>
 
         {/* Error */}
@@ -44,10 +49,10 @@ export function SearchPage() {
         {data && (
           <div className="px-6 py-3 border-t border-gray-100 flex items-center justify-between">
             <span className="text-[13px] text-gray-400">
-              Showing {data.results.length} trusts within 15 miles
+              {data.results.length} hospitals found nearby
             </span>
             <span className="text-[13px] text-gray-500 font-medium">
-              Wait Time &#8595;
+              Best match &#8595;
             </span>
           </div>
         )}
@@ -68,18 +73,18 @@ export function SearchPage() {
             </div>
           ) : data ? (
             <div className="px-6 py-12 text-center text-gray-400 text-sm">
-              No providers found for this cancer type.
+              No hospitals found for this cancer type in your area.
             </div>
           ) : !loading ? (
             <div className="px-6 py-12 text-center text-gray-300 text-sm">
-              Search to see results
+              Select a condition and location to see results
             </div>
           ) : null}
         </div>
 
         {/* Footer */}
         <div className="px-6 py-3 border-t border-gray-100 text-[11px] text-gray-300">
-          Data: NHS England Cancer Waiting Times {data?.period || ''}
+          Source: NHS England Cancer Waiting Times {data?.period || ''} &middot; Indicative only
         </div>
       </div>
 
