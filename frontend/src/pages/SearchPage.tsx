@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { SearchForm } from '../components/SearchForm';
 import { ResultCard } from '../components/ResultCard';
 import { ResultsMap } from '../components/ResultsMap';
+import { PatientFlowCanvas } from '../components/PatientFlow/PatientFlowCanvas';
 import { ChatWidget } from '../components/ChatWidget';
 import { useSearch } from '../hooks/useSearch';
 import type { SearchParams } from '../api/client';
@@ -11,6 +12,7 @@ export function SearchPage() {
   const { data, loading, error, search } = useSearch();
   const [hoveredOds, setHoveredOds] = useState<string | undefined>();
   const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [tab, setTab] = useState<'map' | 'flow'>('map');
 
   const chatContext = useMemo<ChatSearchContext | undefined>(() => {
     if (!data) return undefined;
@@ -99,13 +101,53 @@ export function SearchPage() {
         </div>
       </div>
 
-      {/* Right panel — Map */}
-      <div className="flex-1 bg-cp-bg relative isolate">
-        <ResultsMap
-          results={data?.results || []}
-          userLocation={data?.user_location || gpsLocation || undefined}
-          highlightOds={hoveredOds}
-        />
+      {/* Right panel — Map / Patient Flow */}
+      <div className="flex-1 bg-cp-bg relative isolate flex flex-col">
+        {/* Tab bar (only shown when data exists) */}
+        {data && (
+          <div className="flex border-b border-cp-border bg-cp-surface shrink-0">
+            <button
+              type="button"
+              onClick={() => setTab('map')}
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+                tab === 'map'
+                  ? 'border-cp-lime text-cp-dark'
+                  : 'border-transparent text-cp-text-muted hover:text-cp-dark'
+              }`}
+            >
+              Map
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('flow')}
+              className={`px-4 py-2.5 text-xs font-medium border-b-2 transition-colors ${
+                tab === 'flow'
+                  ? 'border-cp-lime text-cp-dark'
+                  : 'border-transparent text-cp-text-muted hover:text-cp-dark'
+              }`}
+            >
+              Patient Flow
+            </button>
+          </div>
+        )}
+
+        {/* Tab content */}
+        <div className="flex-1 relative min-h-0">
+          {tab === 'map' ? (
+            <ResultsMap
+              results={data?.results || []}
+              userLocation={data?.user_location || gpsLocation || undefined}
+              highlightOds={hoveredOds}
+            />
+          ) : (
+            <PatientFlowCanvas
+              results={data?.results || []}
+              highlightOds={hoveredOds}
+              onTrustHover={setHoveredOds}
+            />
+          )}
+        </div>
+
         <ChatWidget context={chatContext} />
       </div>
     </div>

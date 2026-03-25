@@ -8,11 +8,8 @@
  * Coordinate mapping
  * ------------------
  * PipelineLayout uses a normalised 0–1 space (x: left→right, y: top→bottom).
- * The Three.js scene uses an orthographic world space where the visible area
- * maps to [-1, +1] on both axes (y increases upward).
- *
- *   world_x =  norm_x * 2 - 1
- *   world_y = -(norm_y * 2 - 1)   ← flip because layout y grows downward
+ * The camera is an OrthographicCamera with left=0, right=1, top=0, bottom=1,
+ * so hitboxes are placed directly in normalised layout coordinates.
  */
 
 import {
@@ -52,23 +49,6 @@ interface HitboxRecord {
 }
 
 // ---------------------------------------------------------------------------
-// Coordinate helpers
-// ---------------------------------------------------------------------------
-
-/** Convert a normalised layout x (0–1, left→right) to Three.js world x. */
-function toWorldX(nx: number): number {
-  return nx * 2 - 1;
-}
-
-/**
- * Convert a normalised layout y (0–1, top→bottom) to Three.js world y.
- * Flipped because Three.js y increases upward.
- */
-function toWorldY(ny: number): number {
-  return -(ny * 2 - 1);
-}
-
-// ---------------------------------------------------------------------------
 // HitboxManager
 // ---------------------------------------------------------------------------
 
@@ -105,21 +85,20 @@ export class HitboxManager {
       const laneLayout = layout.lanes[laneIdx];
       if (laneLayout === undefined) continue;
 
-      // Convert lane height from normalised to world units (scale factor = 2
-      // because world spans [-1, +1] = 2 units for a normalised span of 1).
-      const worldHeight = laneLayout.height * 2;
-      const worldWidth  = GATE_HALF_WIDTH * 2 * 2; // half-width × 2 sides × scale
+      // Hitbox dimensions in normalised layout units (camera views 0–1 directly).
+      const hitHeight = laneLayout.height;
+      const hitWidth  = GATE_HALF_WIDTH * 2; // half-width × 2 sides
 
       for (let gateIdx = 0; gateIdx < layout.gates.length; gateIdx++) {
         const gate = layout.gates[gateIdx];
         if (gate === undefined) continue;
 
-        const geometry = new BoxGeometry(worldWidth, worldHeight, 0);
+        const geometry = new BoxGeometry(hitWidth, hitHeight, 0);
         const mesh     = new Mesh(geometry, material);
 
         mesh.position.set(
-          toWorldX(gate.x),
-          toWorldY(laneLayout.yCenter),
+          gate.x,
+          laneLayout.yCenter,
           0,
         );
 
