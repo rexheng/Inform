@@ -70,6 +70,7 @@ export function TrustMap({ trusts, condition }: TrustMapProps) {
                     <span className="text-red-500 font-semibold">{days - 28} days over target</span>
                   )}
                 </div>
+                <a href={`/map/trust/${trust.code}?condition=${condition}`} className="mt-2 block text-[12px] font-bold text-[#0A3B2A] hover:underline">View details &rarr;</a>
               </div>
             </Popup>
           </CircleMarker>
