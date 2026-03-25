@@ -6,7 +6,16 @@ async function fetchJSON<T>(url: string): Promise<T> {
   const resp = await fetch(`${BASE_URL}${url}`);
   if (!resp.ok) {
     const body = await resp.json().catch(() => ({}));
-    throw new Error(body.detail || `API error: ${resp.status}`);
+    const detail = body.detail;
+    const message =
+      typeof detail === 'string'
+        ? detail
+        : Array.isArray(detail)
+          ? detail.map((d: { msg?: string }) => d.msg || JSON.stringify(d)).join('; ')
+          : detail
+            ? JSON.stringify(detail)
+            : `API error: ${resp.status}`;
+    throw new Error(message);
   }
   return resp.json();
 }
