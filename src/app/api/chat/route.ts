@@ -12,17 +12,18 @@ STYLE RULES (strict):
 - Use "you" and "your", not "the patient".
 
 WHEN THE USER ASKS ABOUT WAIT TIMES OR ALTERNATIVES:
-Use the search results to give a specific, confident recommendation. The results are already ranked — #1 is the best option. Include:
-- The top hospital name, how far it is, and its 62-day performance as a percentage (e.g. "85% of patients are treated within 62 days")
-- One or two other nearby options with distance and performance
+Use the hospital data to give a specific, confident recommendation. The hospitals are already sorted — #1 has the shortest wait. Include:
+- The top hospital name, its borough, and wait time in weeks/days
+- One or two other good options with their wait times
 - A short note that under the NHS Constitution they can ask their GP to re-refer them to any NHS hospital they choose
 
 DATA FIELD REFERENCE (do not expose these labels to the user):
-- name = hospital name
-- distance_km = distance from their postcode in km
-- performance_62d = fraction of patients treated within 62 days (multiply by 100 for %)
-- performance_31d = fraction treated within 31 days of decision to treat
-- total_patients_62d = patient volume
+- name = hospital/trust name
+- borough = London borough where it's located
+- wait_weeks = average wait in weeks for the selected cancer type
+- wait_days = same wait converted to days
+- meets_28day = whether trust meets the 28-day faster diagnosis standard
+- meets_62day = whether trust meets the 62-day treatment standard
 
 RULES:
 - Never diagnose or give treatment advice
@@ -56,12 +57,19 @@ export async function POST(request: NextRequest) {
       if (context.postcode) parts.push(`Patient postcode: ${context.postcode}`);
       if (context.results?.length) {
         const summary = context.results.slice(0, 5).map((r: Record<string, unknown>, i: number) => {
-          const perf62 = r.performance_62d != null ? `${(Number(r.performance_62d) * 100).toFixed(0)}%` : 'N/A';
-          const perf31 = r.performance_31d != null ? `${(Number(r.performance_31d) * 100).toFixed(0)}%` : 'N/A';
-          const fds = r.performance_fds != null ? `${(Number(r.performance_fds) * 100).toFixed(0)}%` : 'N/A';
-          return `${i + 1}. ${r.name} — ${Number(r.distance_km).toFixed(1)}km away, 62-day: ${perf62}, 31-day: ${perf31}, FDS: ${fds}, patients: ${r.total_patients_62d}`;
+          const waitWeeks = r.wait_weeks ?? r.wait_days ? `${Math.round(Number(r.wait_days) / 7)}` : null;
+          const waitDays = r.wait_days ?? (waitWeeks ? Number(waitWeeks) * 7 : null);
+          const borough = r.borough || '';
+          const meets28 = r.meets_28day ? 'yes' : 'no';
+          const meets62 = r.meets_62day ? 'yes' : 'no';
+          // Support both old search-result format and new trust format
+          if (r.performance_62d != null) {
+            const perf62 = `${(Number(r.performance_62d) * 100).toFixed(0)}%`;
+            return `${i + 1}. ${r.name} — ${Number(r.distance_km).toFixed(1)}km away, 62-day performance: ${perf62}`;
+          }
+          return `${i + 1}. ${r.name}${borough ? ` (${borough})` : ''} — wait: ${waitDays} days (${waitWeeks} weeks), meets 28-day target: ${meets28}, meets 62-day target: ${meets62}`;
         });
-        parts.push(`Top hospitals (ranked by ClearPath score):\n${summary.join('\n')}`);
+        parts.push(`Top hospitals (shortest wait first):\n${summary.join('\n')}`);
       }
       if (parts.length) {
         system += `\n\n--- SEARCH RESULTS (use these to answer) ---\n${parts.join('\n')}`;

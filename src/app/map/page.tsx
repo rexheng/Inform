@@ -2,6 +2,7 @@
 import dynamic from 'next/dynamic';
 import { useState, useMemo } from 'react';
 import { getAllTrusts } from '@/lib/nhs';
+import { ChatWidget } from '@/map/components/ChatWidget';
 import type { Condition } from '@/lib/types';
 import { CONDITIONS } from '@/lib/types';
 
@@ -89,6 +90,7 @@ export default function MapPage() {
       {/* Map */}
       <div className="flex-1 relative isolate">
         <TrustMap trusts={trusts} condition={condition} />
+        <ChatWidget context={{ cancer_type: condition, results: trusts.sort((a, b) => a.waits[condition] - b.waits[condition]).slice(0, 10).map(t => ({ name: t.name, borough: t.borough, wait_weeks: t.waits[condition], wait_days: t.waits[condition] * 7, meets_28day: t.target_met['28day'], meets_62day: t.target_met['62day'] })) as unknown as Record<string, unknown>[] }} />
       </div>
     </div>
   );
