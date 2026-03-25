@@ -1,13 +1,24 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { SearchForm } from '../components/SearchForm';
 import { ResultCard } from '../components/ResultCard';
 import { ResultsMap } from '../components/ResultsMap';
+import { ChatWidget } from '../components/ChatWidget';
 import { useSearch } from '../hooks/useSearch';
 import type { SearchParams } from '../api/client';
+import type { ChatSearchContext } from '../hooks/useChat';
 
 export function SearchPage() {
   const { data, loading, error, search } = useSearch();
   const [hoveredOds, setHoveredOds] = useState<string | undefined>();
+
+  const chatContext = useMemo<ChatSearchContext | undefined>(() => {
+    if (!data) return undefined;
+    return {
+      cancer_type: data.cancer_type,
+      postcode: data.postcode,
+      results: data.results.slice(0, 10) as unknown as Record<string, unknown>[],
+    };
+  }, [data]);
 
   const handleSearch = (params: SearchParams) => {
     search(params);
@@ -95,6 +106,7 @@ export function SearchPage() {
           userLocation={data?.user_location}
           highlightOds={hoveredOds}
         />
+        <ChatWidget context={chatContext} />
       </div>
     </div>
   );
