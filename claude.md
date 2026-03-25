@@ -1,178 +1,527 @@
-# London Cancer Waiting Times: Feasibility & Key Datasets
+# CLAUDE.md — ClearPath
 
-## Scope
-
-A London-focused analytics tool that enables commissioners, researchers, and clinicians to interrogate cancer waiting time performance across London's 5 ICBs and ~20 acute trusts — identifying where delays cluster, why, and what interventions would have the greatest impact.
-
----
-
-## Why London?
-
-- **5 ICBs** (merging to 4 from April 2026): North Central, North East, North West, South East, South West London
-- **~20 acute trusts** providing cancer services — wide variation in performance
-- **Dense, diverse population** — meaningful health inequalities by borough
-- **Cancer Alliances** already producing local dashboards (e.g. South East London Cancer Alliance) — but no unified London view
-- **Policy tailwind**: National Cancer Plan (Feb 2026) commits to meeting all waiting time standards by March 2029; ICB restructuring creates demand for new data tools
+> This file is the primary context document for all Claude instances working on
+> this codebase. Read it fully before writing any code. Always check
+> `/hackathon/criteria/` before making product decisions.
 
 ---
 
-## What's Feasible with Open Data Alone
+## What we are building
 
-| Capability | Feasible? | Data source |
+ClearPath is a web application that makes NHS cancer waiting time data actionable.
+The data is public but buried in government spreadsheets. We surface it in three
+distinct products, developed across three Git branches, for three distinct users.
+
+### The core problem
+In London, wait times for the same cancer condition vary from 6 to 17 weeks
+depending on which trust a GP refers to. Patients don't know shorter waits exist
+nearby. They don't know they have a legal right to switch. Nobody tells them.
+
+### The three products
+```
+branch: feature/map            → visualise cancer waiting times across London
+branch: feature/patient        → help individual patients find shorter waits
+branch: feature/nhs-dashboard  → help NHS trusts fill cancelled slots
+```
+
+Each branch is a self-contained product. They share a data layer (`/data`) and
+a Claude API utility (`/src/lib/claude.js`) but otherwise do not depend on each other.
+
+---
+
+## Repo structure
+
+```
+clearpath/
+│
+├── CLAUDE.md                        ← you are here, read first
+│
+├── /hackathon/                      ← READ BEFORE MAKING ANY PRODUCT DECISIONS
+│   └── /criteria/
+│       ├── overview.md              ← full hackathon brief and theme
+│       ├── rubric.md                ← scoring rubric (impact / technical / ethics / presentation)
+│       ├── track-health.md          ← Track 1: Biology & Physical Health specifics
+│       └── ethical-questions.md     ← critical questions every team must answer
+│
+├── /data/
+│   ├── trusts.json                  ← pre-processed NHS trust wait times by condition
+│   ├── deprivation.json             ← ONS IMD scores by London borough
+│   ├── trust-codes.json             ← London NHS trust codes and geo coordinates
+│   └── /raw/                        ← original NHS CSVs (do not import directly)
+│
+├── /src/
+│   ├── /lib/
+│   │   ├── claude.js                ← shared Claude API utility (all branches use this)
+│   │   ├── nhs.js                   ← trust lookup, wait time queries, distance calc
+│   │   └── imd.js                   ← deprivation score lookups
+│   └── /components/
+│       └── shared/                  ← any shared UI components
+│
+├── /map/                            ← branch: feature/map
+├── /patient/                        ← branch: feature/patient
+├── /nhs-dashboard/                  ← branch: feature/nhs-dashboard
+│
+└── package.json
+```
+
+---
+
+## Shared data layer
+
+All three branches consume the same pre-processed data files. Do not load raw
+NHS CSVs in the browser. Pre-process them once into the formats below.
+
+### trusts.json
+```json
+{
+  "R1H": {
+    "name": "Barts Health NHS Trust",
+    "lat": 51.5194,
+    "lng": -0.0584,
+    "borough": "Tower Hamlets",
+    "waits": {
+      "colorectal": 14,
+      "breast": 9,
+      "lung": 17,
+      "prostate": 11
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  }
+}
+```
+
+### deprivation.json
+```json
+{
+  "Tower Hamlets": { "imdDecile": 1, "imdScore": 42.3 },
+  "Hackney":       { "imdDecile": 2, "imdScore": 38.1 }
+}
+```
+
+### Data sources
+- NHS England Cancer Waiting Times CSVs (monthly, provider-level)
+  https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
+  Files needed: 62-Day Combined by Cancer (Provider), 28-Day Faster Diagnosis (Provider)
+- ONS Index of Multiple Deprivation by LSOA → aggregate to borough
+- Trust geo coordinates: hardcode from NHS ODS or Google Maps for London trusts
+
+### Key London trust codes
+| Trust | Code | Borough |
 |---|---|---|
-| Monthly CWT performance by London trust | Yes | NHS England CWT provider CSVs |
-| Monthly CWT performance by London ICB | Yes | NHS England CWT commissioner CSVs |
-| Breakdown by cancer type (per trust) | Yes | Provider-based data includes cancer type |
-| Breakdown by pathway stage (FDS, 31-day, 62-day) | Yes | Separate metrics per standard |
-| Time series analysis (2009-present) | Yes | National time series with revisions |
-| Cross-trust benchmarking within London | Yes | Filter provider data to London trusts |
-| Cancer incidence by ICB | Yes | NDRS cancer registration statistics |
-| Screening uptake by GP practice / sub-ICB | Yes | Fingertips Cancer Services profiles |
-| Referral volumes and diagnostic outcomes | Yes | FDS pathway outcome data |
-| Deprivation overlay (IMD by LSOA) | Yes | MHCLG IMD 2019 + ONS lookups |
-| 62-day backlog tracking | Yes | NHS England management information |
-| Demographic breakdown (age, ethnicity) | No | Requires COSD via TRE access |
-| Patient-level pathway analysis | No | Requires COSD/NDRS via TRE |
-| Treatment modality detail | Partial | High-level in CWT; detail in COSD |
+| Barts Health | R1H | Tower Hamlets |
+| Homerton | RQX | Hackney |
+| King's College | RJZ | Southwark |
+| Guy's and St Thomas' | RJ1 | Lambeth |
+| Royal Free | RAL | Camden |
+| UCLH | RRV | Camden |
+| Lewisham and Greenwich | RJ2 | Lewisham |
+| Barking Havering Redbridge | RAP | Havering |
+| Whipps Cross (Barts) | R1H | Waltham Forest |
+| Chelsea and Westminster | RQM | Kensington |
 
 ---
 
-## Key Datasets
+## Shared Claude API utility
 
-### 1. Cancer Waiting Times (CWT) — NHS England Statistics
+All letter and message generation goes through `/src/lib/claude.js`.
+Do not call the Anthropic API directly from components.
 
-**URL:** https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/
+```javascript
+// /src/lib/claude.js
+export async function generateWithClaude(systemPrompt, userPrompt, maxTokens = 500) {
+  const response = await fetch('/api/generate', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ systemPrompt, userPrompt, maxTokens })
+  });
+  const data = await response.json();
+  return data.content;
+}
+```
 
-- **What:** Monthly performance against FDS (28-day), 31-day, and 62-day standards
-- **Granularity:** National, ICB, sub-ICB, provider (trust)
-- **Breakdowns:** Cancer type, treatment modality, pathway outcome, route classification
-- **Format:** XLSX workbooks, CSV (25-61MB combined files)
-- **Time span:** October 2009 — present (monthly)
-- **Access:** Fully open, no registration required
-- **London filter:** ~20 provider codes (trust-level), 5 ICB codes (commissioner-level)
-- **Update frequency:** Monthly (provisional → finalised)
+Server-side API route (`/api/generate.js`) handles the Anthropic key — never
+expose `ANTHROPIC_API_KEY` in the browser.
 
-### 2. Fingertips Cancer Services Profiles — OHID
-
-**URL:** https://fingertips.phe.org.uk/profile/cancerservices
-
-- **What:** Cancer incidence, screening uptake, urgent referrals, diagnostics
-- **Granularity:** GP practice, PCN, sub-ICB, ICB, national
-- **Format:** CSV download or programmatic access via Fingertips API (R/Python)
-- **Access:** Fully open
-- **London value:** Practice-level screening data exposes within-ICB variation — e.g. which GP clusters under-refer
-
-### 3. Cancer Registration Statistics — NDRS
-
-**URL:** https://digital.nhs.uk/ndrs/data/data-outputs/cancer-data-hub
-
-- **What:** Cancer incidence, prevalence, survival, stage at diagnosis
-- **Granularity:** Cancer Alliance, ICB, Local Authority
-- **Format:** CSV / Excel via Cancer Data Hub
-- **Access:** Open (aggregated); patient-level via NHS Secure Data Environment (TRE)
-- **London value:** Incidence and stage-at-diagnosis data contextualises waiting time performance — high late-stage presentation + poor FDS = systemic pathway failure
-
-### 4. Cancer Outcomes and Services Dataset (COSD) — NDRS
-
-**URL:** https://digital.nhs.uk/ndrs/data/data-sets/cosd
-
-- **What:** The national standard for individual-level cancer data — demographics, tumour characteristics, treatment, outcomes
-- **Granularity:** Patient-level
-- **Access:** Restricted — requires application via NHS Secure Data Environment or DATA-CAN
-- **London value:** The gold standard for deep analysis (demographics, treatment pathways, outcomes by ethnicity/deprivation). Not needed for MVP but essential for Phase 2
-
-### 5. Index of Multiple Deprivation (IMD 2019) — MHCLG
-
-**URL:** https://www.gov.uk/government/statistics/english-indices-of-deprivation-2019
-
-- **What:** Deprivation scores and deciles for every LSOA in England
-- **Granularity:** LSOA (Lower Layer Super Output Area)
-- **Format:** CSV / Excel
-- **Access:** Fully open
-- **London value:** Overlay deprivation on cancer performance to expose health inequalities — e.g. do trusts serving more deprived populations have worse 62-day performance?
-
-### 6. NHS Organisation Data — ODS
-
-**URL:** https://digital.nhs.uk/services/organisation-data-service
-
-- **What:** Lookup tables mapping trust codes to ICBs, Cancer Alliances, regions
-- **Format:** CSV
-- **Access:** Fully open
-- **London value:** Essential for filtering national CWT data down to London providers and mapping organisational relationships
-
-### 7. NHS Referral to Treatment (RTT) Waiting Times
-
-**URL:** https://www.england.nhs.uk/statistics/statistical-work-areas/rtt-waiting-times/
-
-- **What:** Consultant-led RTT waiting times by trust and specialty
-- **Granularity:** Provider, treatment function
-- **Access:** Fully open
-- **London value:** Cross-reference general waiting times with cancer-specific data — trusts with high RTT backlogs may have capacity constraints spilling into cancer pathways
+Model: `claude-sonnet-4-6`
+All API calls must complete under 5 seconds. Test this before the demo.
 
 ---
 
-## London ICBs & Key Trusts
+## Environment variables
 
-| ICB | Key acute trusts (cancer) |
+```
+ANTHROPIC_API_KEY=
+CARTO_API_KEY=
+```
+
+---
+
+## Tech stack
+
+```
+Frontend:    React + Tailwind
+Map:         Carto Maps API
+AI:          Claude API (claude-sonnet-4-6)
+Hosting:     Vercel
+```
+
+---
+---
+
+# Branch 1: feature/map
+
+## Purpose
+Visualise cancer waiting times across all London NHS trusts on an interactive map.
+This is the "proof of the problem" — it makes the inequality visible in under 10
+seconds without any explanation needed.
+
+## Location
+```
+/map/
+├── Map.jsx              ← main map component
+├── TrustSidebar.jsx     ← click a trust → show wait time detail
+├── ConditionFilter.jsx  ← dropdown: select cancer type
+├── DeprivationLayer.jsx ← toggle: overlay IMD deprivation data
+└── map.css
+```
+
+## What to build
+
+### Core map
+- Render all London NHS trusts as interactive circles on a Carto base map
+- Colour-code by wait time for selected condition:
+  - Red `#F09595`: 15+ weeks
+  - Amber `#FAC775`: 12–14 weeks
+  - Yellow-green `#C0DD97`: 9–11 weeks
+  - Green `#5DCAA5`: under 9 weeks
+- Circle size can encode volume (number of patients waiting) if data available
+
+### Condition selector
+- Dropdown: Colorectal, Breast, Lung, Prostate, All cancers
+- Map re-renders on selection
+- Default: Colorectal (most relevant for our Sarah persona)
+
+### Trust click → sidebar
+On clicking a trust circle, show:
+- Trust name and borough
+- Current wait time for selected condition
+- 28-day and 62-day target status (met / missed)
+- Trend: improving or worsening vs 3 months ago (if data allows)
+- Button: "Find shorter waits near here" → links to patient branch URL
+
+### Deprivation overlay toggle
+- When enabled: borough polygons tinted by IMD decile
+- Makes the correlation between deprivation and long waits visually obvious
+- Use ONS IMD data from `deprivation.json`
+
+### Legend
+Always visible. Show the four wait-time colour bands and what they mean relative
+to the NHS 62-day target (target = under 9 weeks for first treatment).
+
+## What this branch does NOT do
+- No user authentication
+- No patient data
+- No letter generation
+- No booking or referral functionality
+
+## Acceptance criteria
+- [ ] Map loads with all London trusts rendered correctly
+- [ ] Colour coding updates when condition is changed
+- [ ] Clicking a trust opens the sidebar with correct data
+- [ ] Deprivation overlay toggles on and off cleanly
+- [ ] Map is usable on a laptop screen at 1280px width minimum
+
+---
+---
+
+# Branch 2: feature/patient
+
+## Purpose
+Help an individual cancer patient discover that a shorter wait exists nearby and
+give them everything they need to request a transfer — including a Claude-generated
+letter citing their NHS constitutional rights.
+
+## Location
+```
+/patient/
+├── PatientLookup.jsx    ← entry point: postcode + condition input
+├── WaitComparison.jsx   ← the core screen: current vs alternatives
+├── RightsPanel.jsx      ← NHS rights, target status, PALS number
+├── LetterGenerator.jsx  ← Claude generates transfer request letter
+└── patient.css
+```
+
+## The user
+Sarah Chen, 47, Shadwell (Tower Hamlets, IMD decile 1). Referred after a positive
+FIT test. 11 weeks waiting at Barts. Does not know she can switch trusts.
+
+## What to build
+
+### Step 1: Lookup screen
+Simple form:
+- Postcode input (used to find nearby trusts, not stored)
+- Condition selector: Colorectal / Breast / Lung / Prostate
+- "Find shorter waits" button
+
+### Step 2: Wait comparison screen
+This is the emotional core. Make it clear and stark.
+
+Top section — current situation:
+- Weeks waiting (large number, amber or red if past target)
+- Condition and referring trust
+- Target status badge: "28-day target: missed"
+
+Middle section — nearby alternatives:
+- List of 3–4 nearby trusts sorted by wait time (ascending)
+- For each: trust name, wait time, distance in miles, rough travel time
+- Best option highlighted in green
+- "You could save X weeks" copy on the best option
+
+Bottom comparison card — the gut-punch:
+```
+If you switch          vs        If you stay
+6 weeks                          11+ weeks
+Whipps Cross                     Barts NHS Trust
+```
+
+### Step 3: Rights panel
+- Confirm whether 28-day faster diagnosis standard has been breached
+- One-line plain English explanation of NHS patient choice right
+- PALS (Patient Advice and Liaison Service) number: 0800 953 0667
+- Safeguard copy (required — do not remove):
+  "Wait times are indicative based on monthly NHS data. Clinical suitability
+  should always be discussed with your GP. Staying with your current trust
+  is always a valid choice."
+
+### Step 4: Letter generation
+Button: "Generate my transfer request letter"
+- Calls Claude API via `/src/lib/claude.js`
+- Must complete in under 5 seconds
+- Letter appears inline, fully editable before copying
+- Copy to clipboard button
+- Print button
+
+### Claude system prompt for patient letter
+```
+You are helping an NHS cancer patient exercise their legal right to request a
+transfer to a trust with a shorter waiting time. Write a clear, formal letter
+from the patient to their GP. The letter must:
+- State the patient's current situation (condition, current trust, weeks waiting)
+- Name the alternative trust they are requesting and its current wait time
+- Cite NHS Constitution patient choice rights (Section 2a)
+- Request the GP to action a re-referral to the named trust
+- Be under 200 words
+- Be clinically neutral — do not imply the current trust is inadequate
+- Be respectful and non-confrontational in tone
+- End with space for the patient's name and date
+
+Do not add any commentary outside the letter itself.
+```
+
+### Claude user prompt template
+```
+Patient situation:
+- Name: [name or "I"]
+- Condition: [condition]
+- Current trust: [trust name]
+- Weeks waiting: [n]
+- Requested trust: [trust name]
+- Requested trust wait time: [n] weeks
+- Patient postcode: [postcode]
+
+Write the transfer request letter.
+```
+
+## What this branch does NOT do
+- Does not make clinical recommendations
+- Does not contact the NHS directly
+- Does not store any patient data
+- Does not tell the patient they must switch — only that the option exists
+
+## Acceptance criteria
+- [ ] Postcode + condition lookup returns correct nearby trust list
+- [ ] Comparison card renders correctly with real trust data
+- [ ] Rights panel shows correct target breach status
+- [ ] Claude letter generates in under 5 seconds
+- [ ] Letter is editable and copyable
+- [ ] Safeguard copy is visible on screen before letter generation
+- [ ] No patient data is stored or logged anywhere
+
+---
+---
+
+# Branch 3: feature/nhs-dashboard
+
+## Purpose
+Give NHS trust administrators a dashboard to monitor their appointment pipeline
+and automatically fill cancelled cancer appointments by dispatching Claude-generated
+outreach messages to the next eligible patient on the waitlist.
+
+## Location
+```
+/nhs-dashboard/
+├── Dashboard.jsx        ← main admin view: pipeline overview
+├── WaitlistPanel.jsx    ← ranked waitlist per condition
+├── SlotAlert.jsx        ← cancellation detected → fill the slot
+├── OutreachMessage.jsx  ← Claude generates SMS/letter for next patient
+└── dashboard.css
+```
+
+## The user
+An NHS outpatient coordinator at a London trust. Manages appointment schedules
+for cancer pathways. Currently fills cancellations manually by phone, often fails
+to backfill in time, wastes the slot.
+
+## What to build
+
+### Main dashboard
+Overview metrics for the trust:
+- Total patients on waitlist by condition (colorectal, breast, lung, prostate)
+- Number of appointments this week
+- Slots at risk (patients with upcoming appointments flagged as high DNA risk)
+- Average wait time per condition vs London average
+- Slots wasted this month (running total)
+
+### Waitlist panel
+Table of patients waiting, ranked by priority score.
+
+Priority score formula:
+```
+priority = weeks_waiting × deprivation_multiplier
+deprivation_multiplier: IMD decile 1-2 = 1.5, decile 3-5 = 1.2, decile 6-10 = 1.0
+```
+
+This ensures the longest-waiting patients in the most deprived areas are
+contacted first. Name this logic clearly in the UI.
+
+Columns: rank, patient ID (anonymised), condition, weeks waiting, borough,
+deprivation band, status (waiting / contacted / confirmed)
+
+### Slot alert flow
+When a cancellation occurs (simulated in demo via a "Simulate cancellation" button):
+
+1. Alert banner appears: "[Patient ID] has cancelled their [condition] appointment
+   on [date] at [time]. Slot available."
+2. ClearPath automatically identifies the top-ranked patient from the waitlist
+   for that condition
+3. Shows patient card: weeks waiting, borough, deprivation band
+4. "Generate outreach message" button → Claude drafts SMS
+
+### Claude system prompt for slot outreach SMS
+```
+You are helping an NHS trust fill a newly available cancer appointment slot.
+Write a short, friendly SMS to a patient on the waiting list. The message must:
+- Be under 160 characters if possible (one SMS)
+- Include the trust name, appointment date, time and condition
+- Ask the patient to confirm by replying YES
+- Include a callback number if they have questions
+- Be warm and human — this patient has been waiting a long time
+
+Do not add any commentary outside the SMS itself.
+```
+
+### Claude user prompt template for SMS
+```
+Patient first name: [name]
+Trust: [trust name]
+Appointment date: [date]
+Appointment time: [time]
+Condition: [condition]
+Callback number: [number]
+Weeks patient has been waiting: [n]
+
+Write the outreach SMS.
+```
+
+### Sent messages log
+Simple table showing all outreach messages sent, patient response (YES/NO/no reply),
+and whether the slot was filled. This is the impact evidence for the demo.
+
+## Simulated data for demo
+The waitlist and cancellation events are entirely simulated. Use realistic dummy
+data — real names, realistic waiting times, real London boroughs. No real patient
+records under any circumstances.
+
+Suggested dummy patients for demo:
+```javascript
+const demoWaitlist = [
+  { id: "PT-0042", name: "Marcus", condition: "colorectal", weeksWaiting: 14,
+    borough: "Tower Hamlets", imdDecile: 1 },
+  { id: "PT-0107", name: "Amara", condition: "colorectal", weeksWaiting: 11,
+    borough: "Newham", imdDecile: 2 },
+  { id: "PT-0023", name: "David", condition: "colorectal", weeksWaiting: 9,
+    borough: "Bromley", imdDecile: 7 },
+]
+```
+
+## What this branch does NOT do
+- Does not actually send SMS messages
+- Does not connect to real NHS appointment systems
+- Does not store or process real patient data
+- Does not make clinical triage decisions
+
+## Acceptance criteria
+- [ ] Dashboard renders with correct summary metrics
+- [ ] Waitlist is correctly ranked by priority score
+- [ ] Simulated cancellation triggers the slot alert flow
+- [ ] Claude SMS generates in under 5 seconds
+- [ ] Sent messages log updates after each outreach
+- [ ] Priority scoring logic is visible in the UI with explanation
+
+---
+---
+
+## Build priority
+
+```
+Must work perfectly for demo (do these first):
+  [ ] /data pipeline: trusts.json and deprivation.json pre-processed from NHS CSVs
+  [ ] feature/map: map renders, colour coding works, trust click works
+  [ ] feature/patient: comparison card renders, Claude letter generates live
+
+Build if time allows:
+  [ ] feature/map: deprivation overlay
+  [ ] feature/nhs-dashboard: full dashboard and slot recovery flow
+  [ ] feature/patient: print button on letter
+
+Polish last:
+  [ ] Mobile responsiveness
+  [ ] Loading states on all Claude API calls
+  [ ] Vercel deploy with environment variables set
+  [ ] Error handling if Claude API is slow
+```
+
+---
+
+## Ethical guardrails
+
+Check `/hackathon/criteria/ethical-questions.md` for the full list of questions
+the judges will ask. Every product decision should be defensible against those
+questions.
+
+Quick reference:
+
+| Risk | What we do |
 |---|---|
-| **North Central London** | UCLH, Royal Free, Whittington, North Mid |
-| **North East London** | Barts Health, Homerton, Barking/Havering/Redbridge |
-| **North West London** | Imperial, Chelsea & Westminster, Hillingdon, London North West |
-| **South East London** | Guy's & St Thomas', King's College, Lewisham & Greenwich |
-| **South West London** | St George's, Epsom & St Helier, Croydon, Kingston |
-
-**Note:** From April 2026, North Central and North West London ICBs merge into **West and North London ICB**. The tool should handle this transition.
+| Clinical mismatch | All actions route through GP. Letters request a conversation, not automatic transfer. |
+| Patient pressure | UI copy: "Staying with your current trust is always a valid choice." |
+| Data staleness | Show data date on every comparison. Label all wait times as "indicative." |
+| Digital exclusion | Letter is printable. Flag this gap honestly — do not claim to solve it. |
+| Real patient data | Demo uses simulated data only. No real records anywhere in the codebase. |
 
 ---
 
-## Existing Products & How We Differ
+## What ClearPath is NOT
 
-| Product | What it does | Gap we fill |
-|---|---|---|
-| **Cancer 360** (NHS FDP) | Patient-level operational tracking within a trust | We do population-level analytics *across* trusts |
-| **AuguR** (Leeds/Yorkshire) | Open-source cancer analytics for Yorkshire | We do London specifically, with national comparison |
-| **Nuffield Trust dashboard** | High-level national performance summary | We drill into pathway stage, cancer type, trust drivers |
-| **Fingertips** | Indicator-level profiles, no narrative | We build interactive exploration with context and comparison |
-| **South East London Cancer Alliance dashboard** | Single alliance view | We unify all 5 London ICBs into one tool |
+- Not a booking system
+- Not a clinical triage tool
+- Not a replacement for GP judgment
+- Not dependent on NHS IT integration
+- Not handling real patient data
 
 ---
 
-## Policy Context
-
-| Policy | Date | Relevance |
-|---|---|---|
-| **National Cancer Plan** | Feb 2026 | First 10-year strategy since 2015. 75% 5-year survival by 2035. All waiting time standards met by March 2029 |
-| **FDS target increase** | March 2026 | Faster Diagnosis Standard rising from 75% to 80% |
-| **62-day target** | 2025/26 | Operational target of 75% (currently ~70% nationally) |
-| **NHS Reset** | Oct 2025 | 190K more patients treated within 2 months over 3 years |
-| **ICB restructuring** | April 2026 | NCL + NWL merge — creates data continuity challenge and demand for new tools |
-| **CWT system migration** | 2026 | Entire data collection platform moving — window of opportunity |
-
----
-
-## Proposed MVP (Open Data Only)
-
-**Core features:**
-1. London CWT dashboard — filterable by ICB, trust, cancer type, time period
-2. Pathway stage drilldown — where in the FDS/31-day/62-day pipeline do delays concentrate?
-3. Trust benchmarking — rank London trusts against each other and national median
-4. Trend analysis — 2009-present time series with COVID impact visible
-5. Deprivation overlay — IMD decile correlation with performance metrics
-6. Screening-to-referral pipeline — Fingertips data showing upstream GP-level variation
-
-**Tech:**
-- Static site (Next.js or similar) with pre-processed data
-- Python ETL pipeline pulling monthly CWT CSVs + Fingertips API
-- No backend needed for MVP — all open data, pre-aggregated
-
-**Data refresh:** Monthly, aligned with NHS England publication schedule
-
----
-
-## Phase 2 (Requires Data Access Application)
-
-- COSD patient-level analysis via NHS Secure Data Environment
-- Demographic breakdowns (age, ethnicity, deprivation)
-- Treatment pathway analysis
-- Survival outcome correlation with waiting times
-- Partnership with DATA-CAN for research-grade access
+*ClearPath — LSE Claude Builder Club Hackathon, March 2026*
