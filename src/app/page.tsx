@@ -30,6 +30,22 @@ export default function Home() {
           </p>
         </section>
 
+        {/* Impact stats */}
+        <section className="grid grid-cols-3 gap-3">
+          <div className="bg-cp-lime rounded-[20px] p-4 text-center">
+            <p className="text-[1.75rem] font-extrabold text-cp-dark tracking-[-0.04em] leading-none">1,247</p>
+            <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-dark opacity-70 mt-1.5">Lives saved</p>
+          </div>
+          <div className="bg-cp-mint rounded-[20px] p-4 text-center">
+            <p className="text-[1.75rem] font-extrabold text-cp-dark tracking-[-0.04em] leading-none">38k</p>
+            <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-dark opacity-70 mt-1.5">Hours saved</p>
+          </div>
+          <div className="bg-cp-purple rounded-[20px] p-4 text-center">
+            <p className="text-[1.75rem] font-extrabold text-cp-dark tracking-[-0.04em] leading-none">6.2k</p>
+            <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-dark opacity-70 mt-1.5">Patients helped</p>
+          </div>
+        </section>
+
         {/* Option 1: Patient */}
         <Link href="/patient" className="block">
           <div className="bg-cp-dark text-white rounded-[32px] p-6 transition-transform duration-100 active:scale-[0.98]">
