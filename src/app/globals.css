@@ -1,0 +1,31 @@
+@import "tailwindcss";
+
+@theme inline {
+  --color-background: #ffffff;
+  --color-foreground: #1a1a1a;
+  --font-sans: var(--font-geist-sans), Arial, Helvetica, sans-serif;
+
+  /* NHS brand colours */
+  --color-nhs-blue: #005eb8;
+  --color-nhs-darkblue: #003087;
+  --color-nhs-white: #ffffff;
+  --color-nhs-pale-grey: #f0f4f5;
+  --color-nhs-light-grey: #d8dde0;
+  --color-nhs-grey: #768692;
+  --color-nhs-dark-grey: #425563;
+  --color-nhs-green: #007f3b;
+  --color-nhs-red: #da291c;
+  --color-nhs-warm-yellow: #ffb81c;
+
+  /* Wait time colours */
+  --color-wait-green: #5DCAA5;
+  --color-wait-yellow: #C0DD97;
+  --color-wait-amber: #FAC775;
+  --color-wait-red: #F09595;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
