@@ -28,130 +28,153 @@ RULES:
 - End with a gentle nudge to discuss with their GP
 - If no search results exist, tell them to use the search bar to find hospitals first`;
 
+function buildSystemMessage(context?: Record<string, unknown>): string {
+  let system = SYSTEM_PROMPT;
+  if (!context) return system;
+
+  const parts: string[] = [];
+  if (context.cancer_type) parts.push(`Cancer type searched: ${context.cancer_type}`);
+  if (context.postcode) parts.push(`Patient postcode: ${context.postcode}`);
+  if (Array.isArray(context.results) && context.results.length) {
+    const summary = context.results.slice(0, 5).map((r: Record<string, unknown>, i: number) => {
+      const waitWeeks = r.wait_weeks ?? (r.wait_days ? `${Math.round(Number(r.wait_days) / 7)}` : null);
+      const waitDays = r.wait_days ?? (waitWeeks ? Number(waitWeeks) * 7 : null);
+      const borough = r.borough || '';
+      const meets28 = r.meets_28day ? 'yes' : 'no';
+      const meets62 = r.meets_62day ? 'yes' : 'no';
+      return `${i + 1}. ${r.name}${borough ? ` (${borough})` : ''} — wait: ${waitDays} days (${waitWeeks} weeks), meets 28-day target: ${meets28}, meets 62-day target: ${meets62}`;
+    });
+    parts.push(`Top hospitals (shortest wait first):\n${summary.join('\n')}`);
+  }
+  if (parts.length) {
+    system += `\n\n--- SEARCH RESULTS (use these to answer) ---\n${parts.join('\n')}`;
+  }
+  return system;
+}
+
+function openaiChunk(text: string): string {
+  return `data: ${JSON.stringify({ choices: [{ delta: { content: text } }] })}\n\n`;
+}
+
+/** Stream Anthropic SSE → OpenAI-compatible SSE */
+function streamAnthropicResponse(response: Response): ReadableStream {
+  const encoder = new TextEncoder();
+  return new ReadableStream({
+    async start(controller) {
+      const reader = response.body?.getReader();
+      if (!reader) { controller.close(); return; }
+      const decoder = new TextDecoder();
+      let buffer = '';
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
+          for (const line of lines) {
+            if (!line.startsWith('data: ')) continue;
+            const data = line.slice(6);
+            if (data === '[DONE]') continue;
+            try {
+              const parsed = JSON.parse(data);
+              if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                controller.enqueue(encoder.encode(openaiChunk(parsed.delta.text)));
+              }
+            } catch { /* skip */ }
+          }
+        }
+        controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+      } catch (err) { console.error('Stream error:', err); }
+      finally { controller.close(); }
+    },
+  });
+}
+
+/** Stream Groq (already OpenAI-compatible) → pass through */
+function streamGroqResponse(response: Response): ReadableStream {
+  return response.body!;
+}
+
+const SSE_HEADERS = {
+  'Content-Type': 'text/event-stream',
+  'Cache-Control': 'no-cache',
+  Connection: 'keep-alive',
+};
+
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      { error: 'Chat service not configured' },
-      { status: 503 },
-    );
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  const groqKey = process.env.GROQ_API_KEY;
+
+  if (!anthropicKey && !groqKey) {
+    return Response.json({ error: 'Chat service not configured' }, { status: 503 });
   }
 
   try {
     const { messages, context } = await request.json();
 
     if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      return Response.json(
-        { error: 'Messages are required' },
-        { status: 400 },
-      );
+      return Response.json({ error: 'Messages are required' }, { status: 400 });
     }
 
-    let system = SYSTEM_PROMPT;
-    if (context) {
-      const parts: string[] = [];
-      if (context.cancer_type) parts.push(`Cancer type searched: ${context.cancer_type}`);
-      if (context.postcode) parts.push(`Patient postcode: ${context.postcode}`);
-      if (context.results?.length) {
-        const summary = context.results.slice(0, 5).map((r: Record<string, unknown>, i: number) => {
-          const waitWeeks = r.wait_weeks ?? (r.wait_days ? `${Math.round(Number(r.wait_days) / 7)}` : null);
-          const waitDays = r.wait_days ?? (waitWeeks ? Number(waitWeeks) * 7 : null);
-          const borough = r.borough || '';
-          const meets28 = r.meets_28day ? 'yes' : 'no';
-          const meets62 = r.meets_62day ? 'yes' : 'no';
-          return `${i + 1}. ${r.name}${borough ? ` (${borough})` : ''} — wait: ${waitDays} days (${waitWeeks} weeks), meets 28-day target: ${meets28}, meets 62-day target: ${meets62}`;
-        });
-        parts.push(`Top hospitals (shortest wait first):\n${summary.join('\n')}`);
-      }
-      if (parts.length) {
-        system += `\n\n--- SEARCH RESULTS (use these to answer) ---\n${parts.join('\n')}`;
-      }
-    }
-
-    const anthropicMessages = messages.map((m: { role: string; content: string }) => ({
+    const system = buildSystemMessage(context);
+    const chatMessages = messages.map((m: { role: string; content: string }) => ({
       role: m.role,
       content: m.content,
     }));
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system,
-        messages: anthropicMessages,
-        stream: true,
-      }),
-    });
+    // Try Anthropic first
+    if (anthropicKey) {
+      try {
+        const response = await fetch('https://api.anthropic.com/v1/messages', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': anthropicKey,
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: 'claude-haiku-4-5-20251001',
+            max_tokens: 1024,
+            system,
+            messages: chatMessages,
+            stream: true,
+          }),
+        });
 
-    if (!response.ok) {
-      const err = await response.json().catch(() => ({}));
-      console.error('Anthropic API error:', response.status, err);
-      return Response.json(
-        { error: 'Chat service unavailable' },
-        { status: 502 },
-      );
+        if (response.ok) {
+          return new Response(streamAnthropicResponse(response), { headers: SSE_HEADERS });
+        }
+        console.error('Anthropic API error:', response.status, await response.text().catch(() => ''));
+      } catch (err) {
+        console.error('Anthropic request failed:', err);
+      }
     }
 
-    // Transform Anthropic SSE stream into OpenAI-compatible format for the client
-    const encoder = new TextEncoder();
-    const stream = new ReadableStream({
-      async start(controller) {
-        const reader = response.body?.getReader();
-        if (!reader) { controller.close(); return; }
+    // Fallback to Groq
+    if (groqKey) {
+      const groqMessages = [{ role: 'system', content: system }, ...chatMessages];
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${groqKey}`,
+        },
+        body: JSON.stringify({
+          model: 'llama-3.1-8b-instant',
+          messages: groqMessages,
+          max_tokens: 1024,
+          stream: true,
+        }),
+      });
 
-        const decoder = new TextDecoder();
-        let buffer = '';
+      if (response.ok) {
+        return new Response(streamGroqResponse(response), { headers: SSE_HEADERS });
+      }
+      console.error('Groq API error:', response.status, await response.text().catch(() => ''));
+    }
 
-        try {
-          while (true) {
-            const { done, value } = await reader.read();
-            if (done) break;
-
-            buffer += decoder.decode(value, { stream: true });
-            const lines = buffer.split('\n');
-            buffer = lines.pop() || '';
-
-            for (const line of lines) {
-              if (!line.startsWith('data: ')) continue;
-              const data = line.slice(6);
-              if (data === '[DONE]') continue;
-
-              try {
-                const parsed = JSON.parse(data);
-                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
-                  // Emit in OpenAI-compatible format that useChat expects
-                  const chunk = JSON.stringify({
-                    choices: [{ delta: { content: parsed.delta.text } }],
-                  });
-                  controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
-                }
-              } catch {
-                // skip malformed lines
-              }
-            }
-          }
-          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
-        } catch (err) {
-          console.error('Stream error:', err);
-        } finally {
-          controller.close();
-        }
-      },
-    });
-
-    return new Response(stream, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        Connection: 'keep-alive',
-      },
-    });
+    return Response.json({ error: 'Chat service unavailable' }, { status: 502 });
   } catch (error) {
     console.error('Chat route error:', error);
     return Response.json({ error: 'Internal server error' }, { status: 500 });
