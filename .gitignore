@@ -11,3 +11,5 @@ __pycache__
 *.db
 .vscode
 .idea
+
+.vercel

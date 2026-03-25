@@ -79,6 +79,7 @@ def list_cancer_types(db: Session = Depends(get_db)):
         .filter(
             WaitTime.cancer_type != "ALL CANCERS",
             WaitTime.cancer_type != "Missing or Invalid",
+            WaitTime.cancer_type.notlike("Exhibited%"),
             WaitTime.standard == "FDS",
         )
         .distinct()
