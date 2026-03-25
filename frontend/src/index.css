@@ -1,0 +1,76 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --color-slate-850: #1a2332;
+  --color-accent: #4a8c7f;
+  --color-accent-hover: #3d7568;
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  color: #374151;
+  background: #f8f9fa;
+}
+
+/* Leaflet overrides */
+.leaflet-container {
+  height: 100%;
+  width: 100%;
+  background: #e8ecf0;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+  font-family: var(--font-sans);
+}
+
+.leaflet-popup-content {
+  margin: 10px 14px;
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+/* Chat widget */
+.chat-panel {
+  transition: height 0.25s ease, opacity 0.2s ease;
+}
+
+.chat-bubble-pulse {
+  animation: chat-pulse 2s ease-in-out 3;
+}
+
+@keyframes chat-pulse {
+  0%, 100% { box-shadow: 0 4px 12px rgba(74, 140, 127, 0.3); }
+  50% { box-shadow: 0 4px 20px rgba(74, 140, 127, 0.6); }
+}
+
+.typing-dots {
+  display: inline-flex;
+  gap: 3px;
+  align-items: center;
+  height: 18px;
+}
+
+.typing-dots span {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #9ca3af;
+  animation: typing-bounce 1.2s ease-in-out infinite;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.15s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.3s; }
+
+@keyframes typing-bounce {
+  0%, 60%, 100% { transform: translateY(0); }
+  30% { transform: translateY(-4px); }
+}
