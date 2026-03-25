@@ -1,14 +1,5 @@
 import Link from "next/link";
 
-function LocationIcon() {
-  return (
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-      <circle cx="12" cy="10" r="3" />
-      <path d="M12 21.7C17.3 17 20 13 20 10a8 8 0 1 0-16 0c0 3 2.7 7 8 11.7z" />
-    </svg>
-  );
-}
-
 function ArrowIcon({ size = 16 }: { size?: number }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
@@ -21,92 +12,69 @@ export default function Home() {
   return (
     <div className="w-full max-w-[414px] min-h-screen flex flex-col bg-cp-bg shadow-[0_0_20px_rgba(0,0,0,0.05)]">
       {/* Top bar */}
-      <header className="px-4 pt-4 pb-2 flex justify-between items-center sticky top-0 bg-cp-bg z-10">
-        <div className="flex gap-2 items-center">
-          <div className="bg-cp-lime text-cp-dark px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight flex items-center gap-1.5">
-            NHS ClearPath
-          </div>
+      <header className="px-4 pt-6 pb-2">
+        <div className="bg-cp-lime text-cp-dark px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight inline-flex items-center gap-1.5">
+          ClearPath
         </div>
       </header>
 
       {/* Main */}
-      <main className="px-4 flex flex-col gap-6 pb-16">
+      <main className="px-4 flex flex-col gap-6 flex-1 justify-center pb-16">
         {/* Hero */}
-        <section className="py-2">
-          <h1 className="text-[1.75rem] font-extrabold tracking-[-0.04em] leading-[1.1] mb-4 text-cp-dark">
-            Waiting too long<br />for cancer care?
+        <section>
+          <h1 className="text-[1.75rem] font-extrabold tracking-[-0.04em] leading-[1.1] mb-3 text-cp-dark">
+            How would you like<br />to explore?
           </h1>
-          <p className="text-sm text-cp-text-muted mb-6">
-            In London, wait times for the same cancer condition vary from{" "}
-            <strong className="text-cp-dark">6 weeks</strong> to{" "}
-            <strong className="text-cp-dark">17 weeks</strong> depending on which trust your GP refers you to.
+          <p className="text-sm text-cp-text-muted font-medium">
+            Choose the experience that fits you best.
           </p>
+        </section>
 
-          {/* Stats card */}
-          <div className="bg-cp-dark text-white rounded-[32px] p-6 relative overflow-hidden">
-            <div className="flex justify-between items-start mb-2">
-              <span className="text-sm text-cp-mint font-medium">London Cancer Waits</span>
-              <span className="bg-cp-purple text-cp-dark text-[0.7rem] font-bold px-2.5 py-1 rounded-full">
-                NHS Target: 2 Wks
+        {/* Option 1: Patient */}
+        <Link href="/patient" className="block">
+          <div className="bg-cp-dark text-white rounded-[32px] p-6 transition-transform duration-100 active:scale-[0.98]">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-10 h-10 rounded-full bg-cp-lime flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A3B2A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+              <span className="bg-cp-purple text-cp-dark text-[0.7rem] font-bold px-2.5 py-1 rounded-full">Recommended</span>
+            </div>
+            <h2 className="text-xl font-extrabold tracking-[-0.02em] mb-1">I&apos;m a patient</h2>
+            <p className="text-sm text-white/70 font-medium mb-4">
+              Enter your hospital, condition and postcode to find shorter waits near you and generate a transfer letter.
+            </p>
+            <div className="flex justify-between items-center bg-cp-lime text-cp-dark rounded-full py-3 px-5 font-bold text-sm">
+              Find shorter waits
+              <ArrowIcon size={16} />
+            </div>
+          </div>
+        </Link>
+
+        {/* Option 2: Map explorer */}
+        <Link href="/map" className="block">
+          <div className="bg-white rounded-[20px] p-5 border-[1.5px] border-cp-border transition-transform duration-100 active:scale-[0.98]">
+            <div className="flex items-center gap-3 mb-3">
+              <span className="w-10 h-10 rounded-full bg-cp-mint flex items-center justify-center">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A3B2A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                  <polygon points="1 6 1 22 8 18 16 22 23 18 23 2 16 6 8 2 1 6" />
+                  <line x1="8" y1="2" x2="8" y2="18" />
+                  <line x1="16" y1="6" x2="16" y2="22" />
+                </svg>
               </span>
             </div>
-            <div className="text-[3.5rem] font-extrabold tracking-[-0.05em] leading-none mb-1 text-cp-lime">
-              6–17 Wks
-            </div>
-            <div className="text-[0.8rem] text-white/80 mt-2 pt-2 border-t border-white/15">
-              <strong>18</strong> London trusts &middot; <strong>11 week</strong> variation &middot; <strong>Section 2a</strong> right to choose
-            </div>
-          </div>
-        </section>
-
-        {/* What you can do */}
-        <section>
-          <div className="flex justify-between items-end mb-2">
-            <h2 className="text-xl font-extrabold tracking-[-0.02em]">What You Can Do</h2>
-          </div>
-
-          <div className="bg-white rounded-[20px] p-4 mb-2 border-[1.5px] border-cp-lime">
-            <div className="flex justify-between items-start mb-2">
-              <h3 className="text-lg font-bold leading-tight max-w-[80%]">Find shorter waits near you</h3>
-              <ArrowIcon size={20} />
-            </div>
-            <div className="flex gap-4 mb-4">
-              <div className="flex flex-col">
-                <span className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] opacity-70">Compare</span>
-                <span className="text-base font-bold">18 trusts</span>
-              </div>
-              <div className="flex flex-col">
-                <span className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] opacity-70">Coverage</span>
-                <span className="text-base font-bold">All London</span>
-              </div>
-            </div>
-            <Link
-              href="/patient"
-              className="inline-flex items-center bg-cp-dark text-cp-lime px-3 py-1.5 rounded-full text-[0.8rem] font-semibold gap-1.5"
-            >
-              Check your wait <ArrowIcon size={12} />
-            </Link>
-          </div>
-        </section>
-
-        {/* Your Rights edu card */}
-        <section>
-          <div className="bg-cp-purple rounded-[32px] p-6">
-            <h2 className="text-xl font-extrabold mb-2 leading-tight">
-              Your NHS Right<br />to Choose
-            </h2>
-            <p className="text-sm font-medium mb-4 opacity-90">
-              If you have been waiting over 2 weeks for a suspected cancer referral, you have a legal right to request a transfer to a hospital with a shorter list.
+            <h2 className="text-lg font-extrabold tracking-[-0.02em] text-cp-dark mb-1">Just explore the map</h2>
+            <p className="text-sm text-cp-text-muted font-medium mb-4">
+              Browse all London hospitals on an interactive map, compare cancer wait times and see which trusts perform best.
             </p>
-            <Link
-              href="/patient"
-              className="bg-cp-dark text-white border-none w-full py-4 rounded-full text-[0.9rem] font-bold flex justify-between items-center px-5"
-            >
-              Find shorter waits near me
+            <div className="flex justify-between items-center bg-cp-dark text-white rounded-full py-3 px-5 font-bold text-sm">
+              Open map view
               <ArrowIcon size={16} />
-            </Link>
+            </div>
           </div>
-        </section>
+        </Link>
 
         {/* Footer disclaimer */}
         <footer className="text-center text-xs text-cp-text-muted pt-4 pb-2">
