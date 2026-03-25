@@ -4,10 +4,6 @@ import { ResultCard } from '../components/ResultCard';
 import { ResultsMap } from '../components/ResultsMap';
 import { useSearch } from '../hooks/useSearch';
 
-function kmToMiles(km: number): number {
-  return Math.round(km * 0.621371);
-}
-
 export function SearchPage() {
   const { data, loading, error, search } = useSearch();
   const [hoveredOds, setHoveredOds] = useState<string | undefined>();
