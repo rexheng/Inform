@@ -1,4 +1,6 @@
-const BASE_URL = '/api';
+// In dev, Vite proxies /api to localhost:8000.
+// In production, set VITE_API_URL to the deployed backend (e.g. https://inform-api.railway.app/api)
+const BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 async function fetchJSON<T>(url: string): Promise<T> {
   const resp = await fetch(`${BASE_URL}${url}`);
