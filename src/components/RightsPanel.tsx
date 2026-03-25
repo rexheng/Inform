@@ -1,14 +1,13 @@
-import { Trust, Condition } from "@/lib/types";
+import { SearchResult, perfToWaitDays } from "@/lib/types";
 
 interface RightsPanelProps {
-  currentTrust: Trust;
-  condition: Condition;
+  currentHospital: SearchResult;
 }
 
-export default function RightsPanel({ currentTrust, condition }: RightsPanelProps) {
-  const waitWeeks = currentTrust.waits[condition];
-  const breached28Day = !currentTrust.target_met["28day"];
-  const breached62Day = !currentTrust.target_met["62day"];
+export default function RightsPanel({ currentHospital }: RightsPanelProps) {
+  const waitDays = perfToWaitDays(currentHospital.performance_fds);
+  const pct = currentHospital.performance_fds !== null ? Math.round(currentHospital.performance_fds * 100) : null;
+  const breached = pct !== null && pct < 75;
 
   return (
     <div className="bg-cp-purple rounded-[32px] p-6">
@@ -19,39 +18,20 @@ export default function RightsPanel({ currentTrust, condition }: RightsPanelProp
         If you have been waiting over 2 weeks for a suspected cancer referral, you have a legal right to request a transfer to a hospital with a shorter list.
       </p>
 
-      {/* Target breach status */}
+      {/* Performance status */}
       <div className="bg-white/30 rounded-2xl p-4 mb-4 space-y-2">
         <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${
-              breached28Day ? "bg-red-500" : "bg-green-600"
-            }`}
-          >
-            {breached28Day ? "!" : "\u2713"}
+          <span className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${breached ? "bg-red-500" : "bg-green-600"}`}>
+            {breached ? "!" : "\u2713"}
           </span>
           <span className="text-sm font-medium">
             <strong>28-day faster diagnosis:</strong>{" "}
-            {breached28Day ? (
-              <span className="text-red-800">Target missed ({waitWeeks} wks)</span>
+            {breached ? (
+              <span className="text-red-800">Below target ({pct}% on time, ~{waitDays} day wait)</span>
+            ) : pct !== null ? (
+              <span className="text-green-800">On track ({pct}% on time)</span>
             ) : (
-              <span className="text-green-800">Target met</span>
-            )}
-          </span>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`inline-flex h-6 w-6 items-center justify-center rounded-full text-xs font-bold text-white ${
-              breached62Day ? "bg-red-500" : "bg-green-600"
-            }`}
-          >
-            {breached62Day ? "!" : "\u2713"}
-          </span>
-          <span className="text-sm font-medium">
-            <strong>62-day treatment target:</strong>{" "}
-            {breached62Day ? (
-              <span className="text-red-800">Target missed</span>
-            ) : (
-              <span className="text-green-800">Target met</span>
+              <span className="text-gray-600">No data available</span>
             )}
           </span>
         </div>
@@ -77,7 +57,6 @@ export default function RightsPanel({ currentTrust, condition }: RightsPanelProp
         </p>
       </div>
 
-      {/* Safeguard copy — required, do not remove */}
       <div className="bg-white/20 rounded-2xl p-3 text-xs opacity-80">
         Wait times are indicative based on monthly NHS data. Clinical suitability should always be
         discussed with your GP. Staying with your current trust is always a valid choice.

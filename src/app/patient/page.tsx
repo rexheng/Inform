@@ -1,9 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Condition, ReferralType, TrustWithDistance, PatientContext } from "@/lib/types";
-import { lookupPostcode } from "@/lib/postcodes";
-import { getTrustByCode, getNearbyAlternatives } from "@/lib/nhs";
+import { ReferralType, SearchResult, SearchResponse, PatientContext, CANCER_TYPES } from "@/lib/types";
 import PatientLookup from "@/components/PatientLookup";
 import WaitComparison from "@/components/WaitComparison";
 import RightsPanel from "@/components/RightsPanel";
@@ -20,37 +18,48 @@ function LocationIcon() {
   );
 }
 
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || '/api';
+
 export default function PatientPage() {
   const [step, setStep] = useState<Step>("lookup");
   const [context, setContext] = useState<PatientContext | null>(null);
-  const [selectedTrust, setSelectedTrust] = useState<TrustWithDistance | null>(null);
+  const [selectedResult, setSelectedResult] = useState<SearchResult | null>(null);
+  const [borough, setBorough] = useState<string | null>(null);
 
-  async function handleSearch(postcode: string, condition: Condition, referralType: ReferralType, trustCode: string) {
-    const location = await lookupPostcode(postcode);
-    const currentTrust = getTrustByCode(trustCode);
-    if (!currentTrust) {
-      throw new Error("Selected hospital not found.");
+  async function handleSearch(postcode: string, cancerType: string, referralType: ReferralType, hospitalOds: string) {
+    const ct = encodeURIComponent(cancerType);
+    const pc = encodeURIComponent(postcode);
+    const resp = await fetch(`${API_BASE}/search?cancer_type=${ct}&postcode=${pc}`);
+    if (!resp.ok) {
+      const body = await resp.json().catch(() => ({}));
+      throw new Error(body.detail || `Search failed (${resp.status})`);
+    }
+    const data: SearchResponse = await resp.json();
+
+    const currentHospital = data.results.find(r => r.ods_code === hospitalOds);
+    if (!currentHospital) {
+      throw new Error("Your hospital was not found in results for this cancer type. It may not treat this condition.");
     }
 
-    const alternatives = getNearbyAlternatives(
-      location.lat,
-      location.lng,
-      condition,
-      currentTrust.code
-    );
+    const alternatives = data.results
+      .filter(r => r.ods_code !== hospitalOds)
+      .sort((a, b) => (b.performance_fds ?? 0) - (a.performance_fds ?? 0));
 
-    setContext({ postcode, condition, referralType, location, currentTrust, alternatives });
+    const cancerLabel = CANCER_TYPES.find(c => c.value === cancerType)?.label ?? cancerType;
+
+    setContext({ postcode, cancerType, cancerLabel, referralType, currentHospital, alternatives });
+    setBorough(data.postcode);
     setStep("comparison");
   }
 
-  function handleSelectTrust(trust: TrustWithDistance) {
-    setSelectedTrust(trust);
+  function handleSelectResult(result: SearchResult) {
+    setSelectedResult(result);
     setStep("letter");
   }
 
   function handleBack() {
     if (step === "letter") {
-      setSelectedTrust(null);
+      setSelectedResult(null);
       setStep("comparison");
     } else {
       setContext(null);
@@ -60,16 +69,15 @@ export default function PatientPage() {
 
   return (
     <div className="w-full max-w-[414px] min-h-screen flex flex-col bg-cp-bg shadow-[0_0_20px_rgba(0,0,0,0.05)]">
-      {/* Top bar */}
       <header className="px-4 pt-4 pb-2 flex justify-between items-center sticky top-0 bg-cp-bg z-10">
         <div className="flex gap-2 items-center">
           <a href="/" className="bg-cp-lime text-cp-dark px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight flex items-center gap-1.5">
-            NHS ClearPath
+            ClearPath
           </a>
-          {context?.location?.borough && (
+          {borough && (
             <div className="bg-transparent border-[1.5px] border-cp-dark text-cp-dark px-3.5 py-1.5 rounded-full text-xs font-bold tracking-tight flex items-center gap-1.5">
               <LocationIcon />
-              {context.location.borough}
+              {borough}
             </div>
           )}
         </div>
@@ -84,46 +92,36 @@ export default function PatientPage() {
         )}
       </header>
 
-      {/* Main content */}
       <main className="px-4 flex flex-col gap-6 pb-16">
         {step === "lookup" && <PatientLookup onSearch={handleSearch} />}
 
         {step === "comparison" && context && (
           <>
             <WaitComparison
-              currentTrust={context.currentTrust}
-              condition={context.condition}
+              currentHospital={context.currentHospital}
+              cancerLabel={context.cancerLabel}
               alternatives={context.alternatives}
-              onSelectTrust={handleSelectTrust}
+              onSelectResult={handleSelectResult}
             />
-            <RightsPanel
-              currentTrust={context.currentTrust}
-              condition={context.condition}
-            />
+            <RightsPanel currentHospital={context.currentHospital} />
           </>
         )}
 
-        {step === "letter" && context && selectedTrust && (
+        {step === "letter" && context && selectedResult && (
           <>
             <LetterGenerator
-              currentTrust={context.currentTrust}
-              selectedTrust={selectedTrust}
-              condition={context.condition}
+              currentHospital={context.currentHospital}
+              selectedHospital={selectedResult}
+              cancerType={context.cancerLabel}
               postcode={context.postcode}
             />
-            <RightsPanel
-              currentTrust={context.currentTrust}
-              condition={context.condition}
-            />
+            <RightsPanel currentHospital={context.currentHospital} />
           </>
         )}
       </main>
 
-      {/* Footer */}
       <footer className="mt-auto text-center text-xs text-cp-text-muted px-4 py-4">
-        <p>
-          Data based on NHS England Cancer Waiting Times statistics. Wait times are indicative and updated monthly.
-        </p>
+        <p>Data based on NHS England Cancer Waiting Times statistics. Wait times are indicative and updated monthly.</p>
         <p className="mt-1">LSE Claude Builder Club Hackathon, March 2026</p>
       </footer>
     </div>

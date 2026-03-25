@@ -1,33 +1,8 @@
-export type Condition = "colorectal" | "breast" | "lung" | "prostate";
-
 export type ReferralType = "urgent" | "two-week-wait" | "routine";
 
 export interface Trust {
   code: string;
   name: string;
-  lat: number;
-  lng: number;
-  borough: string;
-  waits: Record<Condition, number>;
-  target_met: {
-    "28day": boolean;
-    "62day": boolean;
-  };
-}
-
-export interface TrustWithDistance extends Trust {
-  distanceMiles: number;
-  travelMinutes: number;
-}
-
-export const CONDITIONS: { value: Condition; label: string }[] = [
-  { value: "colorectal", label: "Colorectal" },
-  { value: "breast", label: "Breast" },
-  { value: "lung", label: "Lung" },
-  { value: "prostate", label: "Prostate" },
-];
-
-export interface PostcodeResult {
   lat: number;
   lng: number;
   borough: string;
@@ -103,10 +78,4 @@ export const REFERRAL_TYPES: { value: ReferralType; label: string }[] = [
 export function perfToWaitDays(perf: number | null): number {
   if (!perf || perf === 0) return 28;
   return Math.round(28 * (2 - perf) / 2);
-}
-
-/** Convert wait days to weeks string. */
-export function daysToWeeks(days: number): string {
-  const weeks = Math.round(days / 7);
-  return `${weeks}`;
 }
