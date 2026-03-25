@@ -1,10 +1,17 @@
 @import "tailwindcss";
 
 @theme {
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --color-slate-850: #1a2332;
-  --color-accent: #4a8c7f;
-  --color-accent-hover: #3d7568;
+  --font-sans: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+
+  /* ClearPath brand colours */
+  --color-cp-dark: #0A3B2A;
+  --color-cp-text-muted: #537566;
+  --color-cp-bg: #F4F7F5;
+  --color-cp-surface: #FFFFFF;
+  --color-cp-lime: #D9FA58;
+  --color-cp-mint: #A3E4D1;
+  --color-cp-purple: #D0A4FF;
+  --color-cp-border: #e0e5e3;
 }
 
 html, body, #root {
@@ -15,8 +22,8 @@ html, body, #root {
 body {
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
-  color: #374151;
-  background: #f8f9fa;
+  color: var(--color-cp-dark);
+  background: linear-gradient(to right, var(--color-cp-border), var(--color-cp-bg), var(--color-cp-border));
 }
 
 /* Leaflet overrides */
@@ -27,7 +34,7 @@ body {
 }
 
 .leaflet-popup-content-wrapper {
-  border-radius: 6px;
+  border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
   font-family: var(--font-sans);
 }

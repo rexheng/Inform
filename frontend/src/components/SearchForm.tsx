@@ -67,7 +67,7 @@ export function SearchForm({ onSearch, loading }: Props) {
       <div>
         <label
           htmlFor="cancer-type"
-          className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-2"
+          className="block text-[0.7rem] font-semibold tracking-[0.05em] uppercase text-cp-dark opacity-70 mb-2"
         >
           Condition / Pathway
         </label>
@@ -75,7 +75,7 @@ export function SearchForm({ onSearch, loading }: Props) {
           id="cancer-type"
           value={cancerType}
           onChange={e => setCancerType(e.target.value)}
-          className="w-full bg-transparent border-b border-gray-300 pb-2 text-gray-900 text-[15px] focus:border-gray-500 focus:outline-none appearance-none cursor-pointer"
+          className="w-full rounded-2xl border-[1.5px] border-cp-border bg-white px-4 py-3 text-cp-dark text-[15px] focus:border-cp-dark focus:outline-none appearance-none cursor-pointer"
           disabled={typesLoading}
         >
           <option value="">Select a cancer type...</option>
@@ -89,7 +89,7 @@ export function SearchForm({ onSearch, loading }: Props) {
 
       <div>
         <label
-          className="block text-[11px] font-semibold tracking-[0.08em] uppercase text-gray-400 mb-2"
+          className="block text-[0.7rem] font-semibold tracking-[0.05em] uppercase text-cp-dark opacity-70 mb-2"
         >
           Your Location
         </label>
@@ -99,13 +99,13 @@ export function SearchForm({ onSearch, loading }: Props) {
           type="button"
           onClick={handleGps}
           disabled={locating}
-          className={`flex items-center gap-2 mb-3 px-3 py-2 rounded-md text-[13px] font-medium transition-colors w-full ${
+          className={`flex items-center gap-2 mb-3 px-4 py-3 rounded-2xl text-[13px] font-medium transition-colors w-full border-[1.5px] ${
             gpsActive
-              ? 'bg-[#4a8c7f]/10 text-[#4a8c7f] border border-[#4a8c7f]/30'
-              : 'bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100'
+              ? 'bg-cp-mint/20 text-cp-dark border-cp-mint'
+              : 'bg-white text-cp-text-muted border-cp-border hover:border-cp-dark'
           }`}
         >
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
             <circle cx="12" cy="12" r="3" />
             <path d="M12 2v4M12 18v4M2 12h4M18 12h4" />
           </svg>
@@ -124,7 +124,7 @@ export function SearchForm({ onSearch, loading }: Props) {
             value={postcode}
             onChange={e => setPostcode(e.target.value)}
             placeholder="Or enter a postcode, e.g. E8 2DS"
-            className="w-full bg-transparent border-b border-gray-300 pb-2 text-gray-900 text-[15px] placeholder-gray-300 focus:border-gray-500 focus:outline-none"
+            className="w-full rounded-2xl border-[1.5px] border-cp-border bg-white px-4 py-3 text-cp-dark text-[15px] placeholder-cp-text-muted/50 focus:border-cp-dark focus:outline-none"
           />
         )}
       </div>
@@ -132,12 +132,12 @@ export function SearchForm({ onSearch, loading }: Props) {
       <button
         type="submit"
         disabled={loading || !canSubmit}
-        className="w-full rounded-md py-3 text-white text-sm font-semibold tracking-wide disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-        style={{ backgroundColor: loading ? '#7fb3a8' : '#4a8c7f' }}
-        onMouseEnter={e => !loading && ((e.target as HTMLElement).style.backgroundColor = '#3d7568')}
-        onMouseLeave={e => !loading && ((e.target as HTMLElement).style.backgroundColor = '#4a8c7f')}
+        className="w-full bg-cp-dark text-white rounded-full py-4 font-bold text-sm tracking-wide flex items-center justify-between px-6 disabled:opacity-40 disabled:cursor-not-allowed transition-colors hover:opacity-90"
       >
-        {loading ? 'Searching...' : 'Find Nearest Hospitals'}
+        <span>{loading ? 'Searching...' : 'Find Nearest Hospitals'}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M5 12h14M12 5l7 7-7 7" />
+        </svg>
       </button>
     </form>
   );
