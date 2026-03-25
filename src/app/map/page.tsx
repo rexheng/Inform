@@ -1,66 +1,94 @@
 'use client';
 import dynamic from 'next/dynamic';
 import { useState, useMemo } from 'react';
-import { SearchForm } from '@/map/components/SearchForm';
-import { ResultCard } from '@/map/components/ResultCard';
-import { ChatWidget } from '@/map/components/ChatWidget';
-import { useSearch } from '@/map/hooks/useSearch';
-import type { SearchParams, ChatSearchContext } from '@/map/types';
+import { getAllTrusts } from '@/lib/nhs';
+import type { Condition } from '@/lib/types';
+import { CONDITIONS } from '@/lib/types';
 
-const ResultsMap = dynamic(() => import('@/map/components/ResultsMap').then(m => ({ default: m.ResultsMap })), { ssr: false });
+const TrustMap = dynamic(() => import('@/map/components/ResultsMap').then(m => ({ default: m.TrustMap })), { ssr: false });
 
 export default function MapPage() {
-  const { data, loading, error, search } = useSearch();
-  const [hoveredOds, setHoveredOds] = useState<string | undefined>();
-  const [gpsLocation, setGpsLocation] = useState<{ lat: number; lng: number } | null>(null);
+  const [condition, setCondition] = useState<Condition>('breast');
+  const trusts = useMemo(() => getAllTrusts(), []);
 
-  const chatContext = useMemo<ChatSearchContext | undefined>(() => {
-    if (!data) return undefined;
-    return { cancer_type: data.cancer_type, postcode: data.postcode, results: data.results.slice(0, 10) as unknown as Record<string, unknown>[] };
-  }, [data]);
+  const stats = useMemo(() => {
+    const waits = trusts.map(t => t.waits[condition]);
+    const avg = waits.reduce((a, b) => a + b, 0) / waits.length;
+    const min = Math.min(...waits);
+    const max = Math.max(...waits);
+    return { avg: Math.round(avg), min, max, total: trusts.length };
+  }, [trusts, condition]);
 
-  const handleSearch = (params: SearchParams) => { search(params); };
+  const avgDays = stats.avg * 7;
 
   return (
-    <div className="h-screen flex">
-      <div className="w-[420px] shrink-0 border-r border-cp-border bg-cp-surface flex flex-col">
-        <div className="px-6 pt-8 pb-6">
-          <div className="flex items-center gap-2 mb-4">
+    <div className="h-screen flex flex-col">
+      {/* Top bar */}
+      <div className="shrink-0 bg-cp-surface border-b border-cp-border">
+        <div className="px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
             <a href="/" className="px-3 py-1 rounded-full bg-cp-lime text-cp-dark text-xs font-bold">ClearPath</a>
+            <span className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-text-muted opacity-70">London Cancer Wait Times</span>
           </div>
-          <h2 className="text-[22px] text-cp-dark font-extrabold leading-snug tracking-[-0.02em]">Find care faster.</h2>
-          <p className="text-[13px] text-cp-text-muted mt-1.5 leading-relaxed font-medium">Compare NHS cancer wait times and distances instantly based on public data.</p>
-        </div>
-        <div className="px-6 pb-6">
-          <SearchForm onSearch={handleSearch} loading={loading} onGpsLocation={setGpsLocation} />
-        </div>
-        {error && <div className="mx-6 mb-4 px-4 py-3 bg-red-50 border border-red-100 rounded-2xl text-red-600 text-[13px]">{error}</div>}
-        {data && (
-          <div className="px-6 py-3 border-t border-cp-border flex items-center justify-between">
-            <span className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-text-muted opacity-70">{data.results.length} hospitals found nearby</span>
-            <span className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-dark">Best match &#8595;</span>
-          </div>
-        )}
-        <div className="flex-1 overflow-y-auto border-t border-cp-border">
-          {data && data.results.length > 0 ? (
-            <div className="divide-y divide-cp-border">
-              {data.results.map((result, i) => (
-                <div key={result.ods_code} onMouseEnter={() => setHoveredOds(result.ods_code)} onMouseLeave={() => setHoveredOds(undefined)}>
-                  <ResultCard result={result} isFirst={i === 0} />
-                </div>
+          <div className="flex items-center gap-3">
+            <label htmlFor="cancer-select" className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-dark opacity-70">Cancer type</label>
+            <select
+              id="cancer-select"
+              value={condition}
+              onChange={e => setCondition(e.target.value as Condition)}
+              className="rounded-full border-[1.5px] border-cp-border bg-white px-4 py-2 text-cp-dark text-[14px] font-semibold focus:border-cp-dark focus:outline-none appearance-none cursor-pointer pr-8"
+            >
+              {CONDITIONS.map(c => (
+                <option key={c.value} value={c.value}>{c.label}</option>
               ))}
-            </div>
-          ) : data ? (
-            <div className="px-6 py-12 text-center text-cp-text-muted text-sm">No hospitals found for this cancer type in your area.</div>
-          ) : !loading ? (
-            <div className="px-6 py-12 text-center text-cp-text-muted opacity-50 text-sm">Select a condition and location to see results</div>
-          ) : null}
+            </select>
+          </div>
         </div>
-        <div className="px-6 py-3 border-t border-cp-border text-[11px] text-cp-text-muted opacity-60">Source: NHS England Cancer Waiting Times {data?.period || ''} &middot; Indicative only</div>
+
+        {/* Stats row */}
+        <div className="px-6 pb-4 flex items-stretch gap-3">
+          <div className="flex-1 bg-white rounded-[20px] border-[1.5px] border-cp-border p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-cp-purple/20 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#D0A4FF" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>
+            </div>
+            <div>
+              <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-text-muted opacity-70">NHS Target</p>
+              <p className="text-[2rem] font-extrabold text-cp-dark tracking-[-0.04em] leading-none mt-0.5">28<span className="text-[0.9rem] font-bold ml-1 tracking-normal">days</span></p>
+              <p className="text-[11px] text-cp-text-muted mt-0.5">Faster Diagnosis Standard</p>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white rounded-[20px] border-[1.5px] border-cp-border p-4 flex items-center gap-4">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 ${avgDays > 28 ? 'bg-red-100' : 'bg-green-100'}`}>
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke={avgDays > 28 ? '#ef4444' : '#0A3B2A'} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2" /></svg>
+            </div>
+            <div>
+              <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-text-muted opacity-70">London Avg ({CONDITIONS.find(c => c.value === condition)?.label})</p>
+              <p className={`text-[2rem] font-extrabold tracking-[-0.04em] leading-none mt-0.5 ${avgDays > 28 ? 'text-red-500' : 'text-cp-dark'}`}>
+                {avgDays}<span className="text-[0.9rem] font-bold ml-1 tracking-normal">days</span>
+              </p>
+              <p className="text-[11px] text-cp-text-muted mt-0.5">Avg across {stats.total} trusts</p>
+            </div>
+          </div>
+
+          <div className="flex-1 bg-white rounded-[20px] border-[1.5px] border-cp-border p-4 flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-cp-mint/30 flex items-center justify-center shrink-0">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#0A3B2A" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M23 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>
+            </div>
+            <div>
+              <p className="text-[0.7rem] uppercase font-semibold tracking-[0.05em] text-cp-text-muted opacity-70">Wait Range</p>
+              <p className="text-[2rem] font-extrabold text-cp-dark tracking-[-0.04em] leading-none mt-0.5">
+                {stats.min * 7}<span className="text-[0.9rem] font-bold tracking-normal">–</span>{stats.max * 7}<span className="text-[0.9rem] font-bold ml-1 tracking-normal">days</span>
+              </p>
+              <p className="text-[11px] text-cp-text-muted mt-0.5">Fastest to slowest trust</p>
+            </div>
+          </div>
+        </div>
       </div>
-      <div className="flex-1 bg-cp-bg relative isolate">
-        <ResultsMap results={data?.results || []} userLocation={data?.user_location || gpsLocation || undefined} highlightOds={hoveredOds} />
-        <ChatWidget context={chatContext} />
+
+      {/* Map */}
+      <div className="flex-1 relative isolate">
+        <TrustMap trusts={trusts} condition={condition} />
       </div>
     </div>
   );
