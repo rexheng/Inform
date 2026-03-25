@@ -1,7 +1,5 @@
 import { NextRequest } from 'next/server';
 
-const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-
 const SYSTEM_PROMPT = `You are ClearPath Assistant — a friendly, concise NHS cancer wait-time advisor. You talk like a knowledgeable friend, not a report.
 
 STYLE RULES (strict):
@@ -31,7 +29,7 @@ RULES:
 - If no search results exist, tell them to use the search bar to find hospitals first`;
 
 export async function POST(request: NextRequest) {
-  const apiKey = process.env.GROQ_API_KEY;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     return Response.json(
       { error: 'Chat service not configured' },
@@ -49,7 +47,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build system message with optional search context
     let system = SYSTEM_PROMPT;
     if (context) {
       const parts: string[] = [];
@@ -57,16 +54,11 @@ export async function POST(request: NextRequest) {
       if (context.postcode) parts.push(`Patient postcode: ${context.postcode}`);
       if (context.results?.length) {
         const summary = context.results.slice(0, 5).map((r: Record<string, unknown>, i: number) => {
-          const waitWeeks = r.wait_weeks ?? r.wait_days ? `${Math.round(Number(r.wait_days) / 7)}` : null;
+          const waitWeeks = r.wait_weeks ?? (r.wait_days ? `${Math.round(Number(r.wait_days) / 7)}` : null);
           const waitDays = r.wait_days ?? (waitWeeks ? Number(waitWeeks) * 7 : null);
           const borough = r.borough || '';
           const meets28 = r.meets_28day ? 'yes' : 'no';
           const meets62 = r.meets_62day ? 'yes' : 'no';
-          // Support both old search-result format and new trust format
-          if (r.performance_62d != null) {
-            const perf62 = `${(Number(r.performance_62d) * 100).toFixed(0)}%`;
-            return `${i + 1}. ${r.name} — ${Number(r.distance_km).toFixed(1)}km away, 62-day performance: ${perf62}`;
-          }
           return `${i + 1}. ${r.name}${borough ? ` (${borough})` : ''} — wait: ${waitDays} days (${waitWeeks} weeks), meets 28-day target: ${meets28}, meets 62-day target: ${meets62}`;
         });
         parts.push(`Top hospitals (shortest wait first):\n${summary.join('\n')}`);
@@ -76,39 +68,84 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    const groqMessages = [
-      { role: 'system', content: system },
-      ...messages.map((m: { role: string; content: string }) => ({
-        role: m.role,
-        content: m.content,
-      })),
-    ];
+    const anthropicMessages = messages.map((m: { role: string; content: string }) => ({
+      role: m.role,
+      content: m.content,
+    }));
 
-    const response = await fetch(GROQ_API_URL, {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${apiKey}`,
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
       },
       body: JSON.stringify({
-        model: 'llama-3.1-8b-instant',
-        messages: groqMessages,
+        model: 'claude-haiku-4-5-20251001',
         max_tokens: 1024,
+        system,
+        messages: anthropicMessages,
         stream: true,
       }),
     });
 
     if (!response.ok) {
       const err = await response.json().catch(() => ({}));
-      console.error('Groq API error:', response.status, err);
+      console.error('Anthropic API error:', response.status, err);
       return Response.json(
         { error: 'Chat service unavailable' },
         { status: 502 },
       );
     }
 
-    // Stream the response through to the client
-    return new Response(response.body, {
+    // Transform Anthropic SSE stream into OpenAI-compatible format for the client
+    const encoder = new TextEncoder();
+    const stream = new ReadableStream({
+      async start(controller) {
+        const reader = response.body?.getReader();
+        if (!reader) { controller.close(); return; }
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        try {
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+              if (!line.startsWith('data: ')) continue;
+              const data = line.slice(6);
+              if (data === '[DONE]') continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.type === 'content_block_delta' && parsed.delta?.text) {
+                  // Emit in OpenAI-compatible format that useChat expects
+                  const chunk = JSON.stringify({
+                    choices: [{ delta: { content: parsed.delta.text } }],
+                  });
+                  controller.enqueue(encoder.encode(`data: ${chunk}\n\n`));
+                }
+              } catch {
+                // skip malformed lines
+              }
+            }
+          }
+          controller.enqueue(encoder.encode('data: [DONE]\n\n'));
+        } catch (err) {
+          console.error('Stream error:', err);
+        } finally {
+          controller.close();
+        }
+      },
+    });
+
+    return new Response(stream, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
