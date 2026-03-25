@@ -71,9 +71,18 @@ export interface SummaryStats {
   average_performance: Record<string, number>;
 }
 
+export type SearchParams =
+  | { cancerType: string; postcode: string }
+  | { cancerType: string; lat: number; lng: number };
+
 export const api = {
-  search: (cancerType: string, postcode: string) =>
-    fetchJSON<SearchResponse>(`/search?cancer_type=${encodeURIComponent(cancerType)}&postcode=${encodeURIComponent(postcode)}`),
+  search: (params: SearchParams) => {
+    const ct = encodeURIComponent(params.cancerType);
+    if ('postcode' in params) {
+      return fetchJSON<SearchResponse>(`/search?cancer_type=${ct}&postcode=${encodeURIComponent(params.postcode)}`);
+    }
+    return fetchJSON<SearchResponse>(`/search?cancer_type=${ct}&lat=${params.lat}&lng=${params.lng}`);
+  },
 
   providers: () => fetchJSON<Provider[]>('/providers'),
 

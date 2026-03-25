@@ -1,4 +1,4 @@
-"""Search API: ranked providers by cancer type + postcode."""
+"""Search API: ranked providers by cancer type + location."""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
@@ -15,16 +15,23 @@ router = APIRouter(tags=["search"])
 @router.get("/search")
 async def search(
     cancer_type: str = Query(..., description="Cancer type to search for"),
-    postcode: str = Query(..., description="UK postcode for distance calculation"),
+    postcode: str | None = Query(None, description="UK postcode for distance calculation"),
+    lat: float | None = Query(None, description="Latitude (alternative to postcode)"),
+    lng: float | None = Query(None, description="Longitude (alternative to postcode)"),
     db: Session = Depends(get_db),
 ):
-    """Search for London trusts by cancer type and postcode, ranked by wait time + distance."""
+    """Search for London trusts by cancer type and location, ranked by wait time + distance."""
 
-    # Geocode the postcode
-    try:
-        user_lat, user_lng = await geocode_postcode(postcode, db)
-    except ValueError:
-        raise HTTPException(status_code=400, detail=f"Invalid postcode: {postcode}")
+    # Resolve user location: prefer lat/lng if provided, otherwise geocode postcode
+    if lat is not None and lng is not None:
+        user_lat, user_lng = lat, lng
+    elif postcode:
+        try:
+            user_lat, user_lng = await geocode_postcode(postcode, db)
+        except ValueError:
+            raise HTTPException(status_code=400, detail=f"Invalid postcode: {postcode}")
+    else:
+        raise HTTPException(status_code=400, detail="Provide either a postcode or lat/lng coordinates")
 
     # Get the latest period in the database
     latest_period = get_latest_period(db)
@@ -32,7 +39,6 @@ async def search(
         raise HTTPException(status_code=503, detail="No data loaded. Run ETL first.")
 
     # Query wait times for this cancer type across all London providers
-    # Get 62D, 31D, FDS data separately
     wait_data = (
         db.query(WaitTime)
         .filter(
@@ -42,7 +48,7 @@ async def search(
         .all()
     )
 
-    # Also try matching with "ALL CANCERS" as fallback
+    # Fallback to ALL CANCERS
     if not wait_data:
         wait_data = (
             db.query(WaitTime)
@@ -92,7 +98,7 @@ async def search(
     ranked = rank_providers(provider_list, user_lat, user_lng)
 
     return {
-        "postcode": postcode,
+        "postcode": postcode or "GPS location",
         "cancer_type": cancer_type,
         "period": latest_period,
         "user_location": {"lat": user_lat, "lng": user_lng},
