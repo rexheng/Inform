@@ -136,7 +136,7 @@ Tooltip near cursor:
 Simultaneously highlights the corresponding trust card in the left result list and pulses the relevant metric (FDS/31D/62D).
 
 ### Click Bottleneck
-Navigates to Trust Detail page (`/trust/:odsCode`) with the relevant standard pre-selected.
+Navigates to Provider Detail page (`/provider/:odsCode`).
 
 ### Hover Trust Card (Left Panel)
 In compare mode: that trust's lane brightens, all others dim to 30% opacity.
@@ -154,6 +154,7 @@ Fixed bar at bottom of canvas (HTML overlay, not rendered in Three.js):
 - Computes: `SUM(breached_patients x days_over_standard)` across all visible trusts
 - Animates with counting-up effect on load
 - Ticks up in real-time (extrapolated: `monthly_total / days_in_month / 86400 x elapsed_seconds`)
+- Subtle "estimated from monthly data" label to avoid implying live data
 - White monospace number on dark semi-transparent bar
 
 ## Three.js Architecture
@@ -175,8 +176,8 @@ src/
 
 ### ParticleSystem (Core Engine)
 - Creates one `THREE.InstancedMesh` with small circle geometry (8-segment ring)
-- Per-instance buffer attributes:
-  - `aPosition` (vec3) — current position
+- Positioning: uses `setMatrixAt()` for per-instance transforms (position + scale). Custom `InstancedBufferAttribute`s are used only for non-transform data.
+- Per-instance buffer attributes (via `InstancedBufferAttribute` on geometry):
   - `aColour` (vec3) — current RGB
   - `aOpacity` (float) — for spawn/despawn fade
   - `aPhase` (float) — pulse phase for breached particles
@@ -217,27 +218,38 @@ src/
 
 ## Data Contract
 
-The visualization reads from the existing API:
+The visualization reads from two existing API endpoints:
 
-| Endpoint | Data Used |
-|----------|-----------|
-| `POST /api/search` | `trust.ods_code`, `trust.name`, `scores.fds`, `scores.31d`, `scores.62d`, `total_patients` |
-| `GET /api/stats/:odsCode` | Monthly trend (for "days lost" computation, breach counts) |
+| Endpoint | Method | Data Used |
+|----------|--------|-----------|
+| `GET /api/search?cancer_type=X&postcode=Y` | GET | `results[].ods_code`, `results[].name`, `results[].performance_fds`, `results[].performance_31d`, `results[].performance_62d`, `results[].total_patients_62d` |
+| `GET /api/providers/:odsCode` | GET | `wait_times[period][standard][].total_patients`, `wait_times[period][standard][].within_standard`, `wait_times[period][standard][].after_standard` — for breach counts and days-lost computation |
+
+### Data Derivation
+
+The search endpoint provides performance ratios and 62D patient counts. For the particle system and days-lost counter, we derive additional fields:
+
+1. **Particle count**: `total_patients_62d / 10` (use 62D as the canonical patient volume — it covers the full referral-to-treatment pathway)
+2. **Gate performance**: `performance_fds`, `performance_31d`, `performance_62d` used directly as pass-through rates (0-1)
+3. **Breached patients**: Derived from search data as `Math.round((1 - performance_62d) * total_patients_62d)`. No additional API call needed for the basic counter.
+4. **Days lost (approximate)**: For each trust, `breachedPatients * estimatedDaysOver` where `estimatedDaysOver` uses a heuristic: `62d_breach → 30 days over`, `31d_breach → 14 days over`, `fds_breach → 10 days over`. This is an estimate — the raw data doesn't include actual per-patient wait durations.
+
+For the detailed provider view (single trust expanded), `GET /api/providers/:odsCode` is called to get `after_standard` exact counts per standard per period, replacing the heuristic with real breach counts.
 
 ### TrustLane Interface
 ```typescript
 interface TrustLane {
   odsCode: string;
   name: string;
-  totalPatients: number;       // raw count from data
-  particleCount: number;       // totalPatients / 10
+  totalPatients62d: number;    // from search results
+  particleCount: number;       // totalPatients62d / 10, capped (see Performance)
   gatePerformance: {
-    fds: number;               // 0-1, e.g. 0.89
-    thirtyOneDay: number;      // 0-1
-    sixtyTwoDay: number;       // 0-1
+    fds: number;               // 0-1, from performance_fds
+    thirtyOneDay: number;      // 0-1, from performance_31d
+    sixtyTwoDay: number;       // 0-1, from performance_62d
   };
-  breachedPatients: number;    // for days-lost counter
-  avgDaysOverStandard: number; // for days-lost counter
+  breachedPatients: number;    // derived: round((1 - performance_62d) * totalPatients62d)
+  estimatedDaysLost: number;   // derived: breached * 30 (heuristic)
 }
 ```
 
@@ -245,11 +257,20 @@ interface TrustLane {
 
 | Metric | Target |
 |--------|--------|
-| Max particles | ~1,500 (10 trusts x 150 avg in compare mode) |
+| Max particles | 2,000 (hard cap on InstancedMesh count) |
+| Per-lane cap (compare mode) | 50 particles per trust (scaling noted in lane label if capped) |
+| Per-lane cap (single mode) | 300 particles |
+| Minimum per lane | 1 particle (trusts with < 10 patients still get 1 dot) |
 | Draw calls | 1 (single InstancedMesh) |
 | Frame rate | 60fps on integrated GPU (MacBook Air tier) |
 | Shader complexity | Minimal — no lighting, no shadows, no post-processing |
 | Memory | < 50MB GPU allocation |
+
+### Particle Spawn Rate
+Particles spawn continuously in a loop. Spawn interval = `4 seconds / particleCount` so that at steady state, approximately `particleCount` particles are alive simultaneously for a trust with 100% compliance. Bottlenecked particles accumulate above this baseline. When all particles have spawned and exited, the cycle restarts seamlessly.
+
+### GPU Resource Cleanup
+On unmount: dispose renderer, scene, all geometries, materials, and all `InstancedBufferAttribute` arrays. Set references to null to prevent memory leaks during tab switching.
 
 ## Responsive Behaviour
 
