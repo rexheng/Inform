@@ -1,4 +1,4 @@
-import type { SearchResponse, ProviderDetail, SearchParams } from './types';
+import type { SearchResponse, SearchParams } from './types';
 
 const BASE_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
 
@@ -19,5 +19,4 @@ export const api = {
     }
     return fetchJSON<SearchResponse>(`/search?cancer_type=${ct}&lat=${params.lat}&lng=${params.lng}`);
   },
-  provider: (odsCode: string) => fetchJSON<ProviderDetail>(`/providers/${odsCode}`),
 };

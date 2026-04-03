@@ -286,5 +286,37 @@
       "28day": false,
       "62day": false
     }
+  },
+  "R1K": {
+    "name": "London North West University Healthcare NHS Trust",
+    "lat": 51.5764,
+    "lng": -0.3180,
+    "borough": "Harrow",
+    "waits": {
+      "colorectal": 11,
+      "breast": 9,
+      "lung": 13,
+      "prostate": 11
+    },
+    "target_met": {
+      "28day": false,
+      "62day": false
+    }
+  },
+  "RPY": {
+    "name": "The Royal Marsden NHS Foundation Trust",
+    "lat": 51.4906,
+    "lng": -0.1740,
+    "borough": "Kensington and Chelsea",
+    "waits": {
+      "colorectal": 6,
+      "breast": 5,
+      "lung": 7,
+      "prostate": 6
+    },
+    "target_met": {
+      "28day": true,
+      "62day": true
+    }
   }
 }

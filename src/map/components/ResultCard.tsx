@@ -36,7 +36,7 @@ export function ResultCard({ result, isFirst }: Props) {
   return (
     <div className={`border-l-[3px] px-5 py-4 transition-all duration-100 ${isFirst ? 'border-l-cp-dark bg-cp-surface' : 'border-l-transparent hover:bg-cp-bg'}`}>
       <div className="flex items-start justify-between gap-3">
-        <Link href={`/map/provider/${result.ods_code}`} className="flex-1 min-w-0 group">
+        <Link href={`/map/trust/${result.ods_code}`} className="flex-1 min-w-0 group">
           <h3 className="font-semibold text-[15px] text-cp-dark leading-snug group-hover:opacity-70 transition-colors">{result.name}</h3>
           <p className="text-[13px] text-cp-text-muted mt-0.5 font-medium">{kmToMiles(result.distance_km)} miles away</p>
         </Link>
@@ -55,7 +55,7 @@ export function ResultCard({ result, isFirst }: Props) {
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polygon points="3 11 22 2 13 21 11 13 3 11" /></svg>
             Directions
           </a>
-          <Link href={`/map/provider/${result.ods_code}`} className="text-[12px] text-cp-text-muted font-medium hover:text-cp-dark">Details &rarr;</Link>
+          <Link href={`/map/trust/${result.ods_code}`} className="text-[12px] text-cp-text-muted font-medium hover:text-cp-dark">Details &rarr;</Link>
         </div>
       </div>
     </div>

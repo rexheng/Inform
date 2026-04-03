@@ -21,6 +21,8 @@ export const trustInfo: Record<string, { website: string; phone: string }> = {
   RRV: { website: 'https://www.uclh.nhs.uk/', phone: '020 3447 9922' },
   RVR: { website: 'https://www.epsom-sthelier.nhs.uk/', phone: '020 8296 2000' },
   RYJ: { website: 'https://www.imperial.nhs.uk/', phone: '020 3313 5000' },
+  RVL: { website: 'https://www.royalfree.nhs.uk/services/barnet-hospital/', phone: '020 8216 4600' },
+  RNJ: { website: 'https://www.northmid.nhs.uk/', phone: '020 8887 2000' },
   NDA: { website: 'https://www.hcrgcaregroup.com/', phone: '0300 303 9509' },
   NT3: { website: 'https://www.spirehealthcare.com/', phone: '0330 057 8140' },
 };

@@ -25,8 +25,8 @@ export default function Home() {
           <h1 className="text-[1.75rem] font-extrabold tracking-[-0.04em] leading-[1.1] mb-3 text-cp-dark">
             How would you like<br />to explore?
           </h1>
-          <p className="text-sm text-cp-text-muted font-medium">
-            Choose the experience that fits you best.
+          <p className="text-sm text-cp-text-muted font-medium leading-relaxed">
+            ClearPath helps you find shorter NHS cancer waiting times. Compare hospitals near you, see real wait data, and generate a GP transfer letter &mdash; all in minutes.
           </p>
         </section>
 

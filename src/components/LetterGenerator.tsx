@@ -76,11 +76,151 @@ export default function LetterGenerator({
 
   function handlePrint() {
     const printWindow = window.open("", "_blank");
-    if (printWindow) {
-      printWindow.document.write(`<html><head><title>Transfer Request Letter</title><style>body { font-family: system-ui, sans-serif; padding: 40px; line-height: 1.6; white-space: pre-wrap; }</style></head><body>${letter}</body></html>`);
-      printWindow.document.close();
-      printWindow.print();
-    }
+    if (!printWindow) return;
+
+    const today = new Date().toLocaleDateString("en-GB", {
+      day: "numeric", month: "long", year: "numeric",
+    });
+
+    // Escape HTML and convert line breaks to paragraphs
+    const escaped = letter
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;");
+    const paragraphs = escaped
+      .split(/\n{2,}/)
+      .map((p) => `<p>${p.replace(/\n/g, "<br/>")}</p>`)
+      .join("");
+
+    printWindow.document.write(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>Transfer Request Letter — ClearPath</title>
+<style>
+  @page { size: A4; margin: 20mm 25mm 25mm 25mm; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    color: #1a1a1a;
+    font-size: 11pt;
+    line-height: 1.65;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 20px;
+    border-bottom: 2.5px solid #0A3B2A;
+    margin-bottom: 32px;
+  }
+  .logo-area { display: flex; align-items: center; gap: 10px; }
+  .logo-mark {
+    width: 36px; height: 36px;
+    background: #D9FA58;
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .logo-mark svg { width: 20px; height: 20px; }
+  .logo-text {
+    font-size: 18pt;
+    font-weight: 800;
+    color: #0A3B2A;
+    letter-spacing: -0.03em;
+  }
+  .logo-sub {
+    font-size: 8pt;
+    color: #537566;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    margin-top: 1px;
+  }
+  .header-date {
+    text-align: right;
+    font-size: 9.5pt;
+    color: #537566;
+    line-height: 1.5;
+  }
+
+  .letter-body { margin-bottom: 40px; }
+  .letter-body p {
+    margin-bottom: 14px;
+    text-align: left;
+  }
+
+  .footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid #e0e5e3;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 8pt;
+    color: #537566;
+  }
+  .footer-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    background: #F4F7F5;
+    border-radius: 20px;
+    padding: 4px 10px;
+    font-weight: 600;
+    color: #0A3B2A;
+    font-size: 7.5pt;
+  }
+  .footer-badge span {
+    width: 6px; height: 6px;
+    background: #D9FA58;
+    border-radius: 50%;
+    display: inline-block;
+  }
+
+  @media screen {
+    body { max-width: 210mm; margin: 20px auto; padding: 20mm 25mm; background: #f5f5f5; }
+    body > div { background: white; padding: 40px 50px; border-radius: 8px; box-shadow: 0 2px 20px rgba(0,0,0,0.08); min-height: 277mm; display: flex; flex-direction: column; }
+    .letter-body { flex: 1; }
+  }
+</style>
+</head>
+<body>
+<div>
+  <div class="header">
+    <div>
+      <div class="logo-area">
+        <div class="logo-mark">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#0A3B2A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9 18l6-6-6-6"/>
+          </svg>
+        </div>
+        <div>
+          <div class="logo-text">ClearPath</div>
+          <div class="logo-sub">NHS Cancer Wait Time Navigator</div>
+        </div>
+      </div>
+    </div>
+    <div class="header-date">
+      ${today}<br/>
+      Transfer Request Letter
+    </div>
+  </div>
+
+  <div class="letter-body">
+    ${paragraphs}
+  </div>
+
+  <div class="footer">
+    <div>Generated via ClearPath &middot; clearpath.health &middot; Data sourced from NHS England Cancer Waiting Times statistics</div>
+    <div class="footer-badge"><span></span> ClearPath</div>
+  </div>
+</div>
+</body>
+</html>`);
+    printWindow.document.close();
+    printWindow.print();
   }
 
   return (
