@@ -1,9 +1,52 @@
 'use client';
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { MapContainer, TileLayer, CircleMarker, Popup, useMap } from 'react-leaflet';
 import type { Trust, Condition } from '@/lib/types';
 import type { SearchResult } from '../types';
 import 'leaflet/dist/leaflet.css';
+
+/* ── Live user location marker ── */
+
+function UserLocationMarker() {
+  const [position, setPosition] = useState<{ lat: number; lng: number } | null>(null);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !navigator.geolocation) return;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setPosition({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {
+        // Silently fail — location is optional enhancement
+      },
+      { enableHighAccuracy: false, timeout: 10000 }
+    );
+  }, []);
+
+  if (!position) return null;
+
+  return (
+    <>
+      {/* Pulsing outer ring */}
+      <CircleMarker
+        center={[position.lat, position.lng]}
+        radius={18}
+        pathOptions={{ fillColor: '#0A3B2A', fillOpacity: 0.12, color: '#0A3B2A', weight: 1, opacity: 0.3 }}
+      />
+      {/* Solid inner dot */}
+      <CircleMarker
+        center={[position.lat, position.lng]}
+        radius={7}
+        pathOptions={{ fillColor: '#0A3B2A', fillOpacity: 1, color: '#D9FA58', weight: 2.5 }}
+      >
+        <Popup>
+          <div className="font-semibold text-[13px]">Your location</div>
+        </Popup>
+      </CircleMarker>
+    </>
+  );
+}
 
 /* ── Trust heatmap (used by /map page) ── */
 
@@ -76,6 +119,7 @@ export function TrustMap({ trusts, condition }: TrustMapProps) {
           </CircleMarker>
         );
       })}
+      <UserLocationMarker />
       <FitBoundsTrusts trusts={trusts} />
     </MapContainer>
   );
