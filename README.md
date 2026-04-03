@@ -1,36 +1,65 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# ClearPath — Find Shorter NHS Cancer Waiting Times
 
-## Getting Started
+ClearPath helps NHS cancer patients discover shorter waiting times at nearby London trusts and exercise their legal right to choose where they receive care.
 
-First, run the development server:
+**Live:** [inform-eight.vercel.app](https://inform-eight.vercel.app)
+
+## What it does
+
+- **Patient flow** — Enter your hospital, cancer type, and postcode. ClearPath finds nearby trusts with shorter waits, compares them side-by-side, and generates a GP transfer request letter you can print or copy.
+- **Map explorer** — Browse all 20+ London NHS trusts on an interactive map. Colour-coded wait times by cancer type, with detailed trust pages showing diagnosis, treatment, and referral-to-treatment metrics.
+- **AI chat assistant** — Context-aware chat on the map page that answers questions about wait times, hospital comparisons, and general cancer information using NHS data.
+
+## Tech stack
+
+- **Next.js 16** (App Router, React 19, Turbopack)
+- **Tailwind CSS 4** with ClearPath design system
+- **Leaflet / react-leaflet** for interactive maps
+- **Anthropic Claude** (letter generation) + **Groq Llama** (chat fallback)
+- **Vercel** for deployment
+
+## Getting started
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Create `.env.local` with:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```
+GROQ_API_KEY=your_groq_key
+# Optional — letter generation uses mock fallback without this:
+# ANTHROPIC_API_KEY=your_anthropic_key
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Project structure
 
-## Learn More
+```
+src/
+  app/
+    page.tsx              # Homepage — choose patient flow or map
+    patient/page.tsx      # Patient journey (lookup → compare → letter)
+    map/page.tsx          # Interactive trust map
+    map/trust/[code]/     # Trust detail page
+    api/chat/route.ts     # Streaming chat (Anthropic + Groq fallback)
+    api/generate/route.ts # Letter generation (Claude + mock fallback)
+    api/search/route.ts   # Hospital search with postcode geocoding
+  components/             # PatientLookup, WaitComparison, LetterGenerator, RightsPanel
+  map/components/         # ResultsMap, TrustMap, ChatWidget, ResultCard
+  lib/                    # NHS data, types, Claude integration, postcodes
+data/
+  trusts.json             # 20+ London NHS trusts with wait times by cancer type
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Data
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Wait time data sourced from [NHS England Cancer Waiting Times](https://www.england.nhs.uk/statistics/statistical-work-areas/cancer-waiting-times/) monthly statistics. Covers FDS (28-day), 31-day, and 62-day standards across breast, lung, colorectal, and prostate pathways.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Deployment
 
-## Deploy on Vercel
+Deployed on Vercel. Push to `master` triggers auto-deploy. Environment variable `GROQ_API_KEY` must be set in Vercel project settings for chat to work.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+---
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Built at the LSE Claude Builder Club Hackathon, March 2026.
